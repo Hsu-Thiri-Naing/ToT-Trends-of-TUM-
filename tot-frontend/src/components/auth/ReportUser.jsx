@@ -56,27 +56,22 @@ export default function ReportUser({
     };
 
     return (
-        <section className="auth-section rounded-3xl lg:h-[540px] lg:mr-8 my-4 lg:my-auto bg-[#5978A433] font-balthazar lg:overflow-hidden py-5 w-full">
-            {error && (
-                <div className="error-message text-red-500 relative text-center text-lg sm:text-xl cherry-bomb mb-3">
-                    {error}
-                </div>
-            )}
-            {successMessage && (
-                <div className="success-message relative text-center text-green-500 text-lg sm:text-xl cherry-bomb mb-3">
-                    {successMessage}
-                </div>
-            )}
+        <section className="auth-detail">
+            <div className="auth-detail-card liquid-glass glass-responsive">
+                <h1>Report Trendmate</h1>
 
-            <div className="edit-profile-container boxshadow  rounded-4xl px-4 sm:px-7 pt-2 mx-auto flex flex-col w-full lg:w-120 lg:h-full lg:overflow-y-auto lg:no-scrollbar">
-                <div className="chat-header -mx-7 py-3 border-b-2 border-b-cyan-50/70 ">
-                    <h2 className="text-2xl text-center">Report Trendmate</h2>
-                </div>
+                {error && (
+                    <div className="auth-error" role="alert">
+                        {error}
+                    </div>
+                )}
+                {successMessage && (
+                    <div className="auth-success" role="status">
+                        {successMessage}
+                    </div>
+                )}
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="px-5 py-7 mb-5 flex flex-col gap-6"
-                >
+                <form onSubmit={handleSubmit}>
                     <input
                         className="absolute top-0"
                         type="hidden" // Hide the ID field, it's for submission only
@@ -88,16 +83,14 @@ export default function ReportUser({
                     <div className="input-group flex flex-col">
                         {" "}
                         {/* Optional: Wrap for styling */}
-                        <label htmlFor="email" className="text-lg">
+                        <label htmlFor="reported_user_name" className="text-lg">
                             {" "}
                             Trendmate name
-                            <span className="text-gray-500">
-                                ( who you want to report )
-                            </span>
                         </label>
                         <input
-                            className="boxshadow2 outline-0 rounded-xl text-lg px-4 py-1 focus:placeholder-gray-400/50"
+                            className="auth-input"
                             type="text"
+                            id="reported_user_name"
                             name="reported_user_name" // This field is just for display, can be disabled
                             placeholder="User Name to Report"
                             value={formData.reported_user_name} // Show the name
@@ -111,15 +104,15 @@ export default function ReportUser({
                     <div className="input-group flex flex-col">
                         {" "}
                         {/* Optional: Wrap for styling */}
-                        <label htmlFor="email" className="text-lg">
+                        <label htmlFor="reason" className="text-lg">
                             {" "}
-                            Please provide details about the trendmate
+                            Reason for reporting
                         </label>
                         <textarea
-                            className="boxshadow2 outline-none rounded-xl text-lg px-4 py-1 focus:placeholder-gray-400/50"
+                            className="auth-input"
+                            id="reason"
                             name="reason"
-                            placeholder="Please write reason for reporting 
-(eg. inappropriate content, harassment)"
+                            placeholder="Describe what happened…"
                             rows="5"
                             value={formData.reason}
                             onChange={handleChange}
@@ -127,16 +120,16 @@ export default function ReportUser({
                         ></textarea>
                     </div>
 
-                    <div className="flex justify-between items-center ">
+                    <div className="auth-form-actions">
                         <button
-                            className="boxshadow2 px-4 py-2 rounded-xl cursor-pointer"
+                            className="auth-secondary glass-lens"
                             type="button"
                             onClick={onBackToHome}
                         >
                             Back to Home
                         </button>
                         <button
-                            className="boxshadow2 px-4 py-2 rounded-xl cursor-pointer"
+                            className="auth-submit glass-primary"
                             type="submit"
                             disabled={loading}
                         >

@@ -122,19 +122,19 @@ const PostCardStatic = ({ post }) => {
   // ✅ END NEW
 
   return (
-    <article className="post-card boxshadow relative w-full px-4 sm:px-7 pt-5 pb-12 rounded-3xl shadow-lg break-inside-avoid mb-4">
+    <article className="profile-post-card liquid-glass">
       {/* Header */}
       <header className="post-header flex justify-between items-start">
-        <div className="mb-4 flex items-center">
-          <div className="post-avatar rounded-lg w-fit inline-block  mr-2 cursor-pointer">
+        <div className="flex min-w-0 items-center">
+          <div className="post-avatar glass-lens rounded-lg w-fit inline-block mr-2 shrink-0">
             <UserAvatar
               src={post.user?.avatar || post.user?.profile_picture}
               alt={`${post.user?.name || "User"}'s avatar`}
               className="user-avatar w-10 h-10 rounded-lg object-cover"
             />
           </div>
-          <div className="post-header-info flex flex-col  ">
-            <strong className="roboto-serif-300 font-bold text-xl sm:text-2xl">
+          <div className="post-header-info flex min-w-0 flex-col">
+            <strong className="font-bold text-base">
               {post.user?.name || "Unknown User"}
             </strong>
             <small>{new Date(post.created_at).toLocaleString()}</small>
@@ -142,7 +142,7 @@ const PostCardStatic = ({ post }) => {
         </div>
         <div className="flex flex-col items-end gap-1">
           {post.category && (
-            <span className="cat-badge boxshadow px-2 py-0.5 rounded-2xl">
+            <span className="cat-badge glass-lens px-2 py-0.5 rounded-2xl">
               {CATEGORY_NAMES[post.category] || post.category}
             </span>
           )}
@@ -167,7 +167,7 @@ const PostCardStatic = ({ post }) => {
       </header>
 
       {/* Body */}
-      <div className="post-body mb-6">
+      <div className="post-body my-4">
         {/* Current post body (only if exists and is not a share) */}
         {post.body && !post.shared_post_id && <p>{post.body}</p>}
 
@@ -265,7 +265,7 @@ const PostCardStatic = ({ post }) => {
                 </div> */}
 
       <div className="post-stats flex justify-between items-center">
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-3">
           <div className="flex gap-2">
             <div className="react bg-[url('/assets/images/happy.png')] "></div>
             {likes}

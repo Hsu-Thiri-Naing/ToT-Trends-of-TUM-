@@ -6,70 +6,47 @@ export default function UserGrid({
   followChanges,
   onChangeFollow,
   onViewProfile,
+  emptyMessage,
 }) {
-  return (
-    <div className="user-grid grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 p-1 w-full min-w-0">
-      {users.length === 0 ? (
-        <p className="no-users error-message cherry-bomb text-xl text-red-500 col-span-full text-center py-6">
-          No users found
-        </p>
-      ) : (
-        users.map((user) => {
-          const change = followChanges[user.id];
-          const isFollowing = change?.following ?? user.is_following ?? false;
+  if (users.length === 0) {
+    return <p className="profile-tab-status liquid-glass">{emptyMessage}</p>;
+  }
 
-          return (
-            <div
-              key={user.id}
-              className="user-card boxshadow2 p-3 sm:p-5 flex flex-col justify-between items-center w-full min-w-0 rounded-2xl transition-shadow duration-150 hover:shadow-lg group"
+  return (
+    <ul className="user-grid">
+      {users.map((user) => {
+        const change = followChanges[user.id];
+        const isFollowing = change?.following ?? user.is_following ?? false;
+        const name = user.name || "Unknown user";
+
+        return (
+          <li key={user.id} className="profile-member liquid-glass">
+            <button
+              type="button"
+              className="profile-member-link"
+              aria-label={`View profile of ${name}`}
+              onClick={() => onViewProfile(user.id, user)}
             >
+              <span className="profile-member-avatar glass-lens">
+                <UserAvatar src={user.avatar || user.profile_picture} alt="" width="64" height="64" />
+              </span>
+              <strong title={name}>{name}</strong>
+            </button>
+            {user.email && <p className="profile-member-email" title={user.email}>{user.email}</p>}
+            {user.id !== currentUser?.id && (
               <button
                 type="button"
-                className="user-avatar cursor-pointer mb-2 sm:mb-3 shrink-0"
-                aria-label={"View profile of " + user.name}
-                onClick={() => onViewProfile(user.id, user)}
+                className="profile-action glass-lens"
+                onClick={() => onChangeFollow(user, !isFollowing)}
+                disabled={Boolean(change?.pending)}
+                aria-busy={Boolean(change?.pending)}
               >
-                <UserAvatar
-                  className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform duration-200"
-                  src={user.avatar || user.profile_picture}
-                  alt=""
-                />
+                {isFollowing ? "Unfollow" : "Follow"}
               </button>
-              <div className="user-details flex flex-col justify-center items-center mb-2.5 sm:mb-3 w-full text-center min-w-0 px-1">
-                <h3
-                  className="roboto-serif-300 font-bold text-sm sm:text-lg text-center truncate max-w-full cursor-pointer hover:text-blue-900"
-                  onClick={() => onViewProfile(user.id, user)}
-                  title={user.name || "Unknown User"}
-                >
-                  {user.name || "Unknown User"}
-                </h3>
-                <p
-                  className="text-[11px] sm:text-sm text-gray-700/80 truncate max-w-full mt-0.5"
-                  title={user.email || ""}
-                >
-                  {user.email || "No email"}
-                </p>
-              </div>
-
-              {user.id !== currentUser?.id && (
-                <button
-                  className={`rounded-xl py-1 sm:py-1.5 px-2 sm:px-4 text-xs sm:text-sm font-semibold cursor-pointer w-full mt-auto transition-all duration-200 active:scale-95 ${
-                    isFollowing
-                      ? "boxshadow2 text-gray-800 hover:bg-red-500/20 hover:text-red-700"
-                      : "bg-[#5978A4] text-white hover:bg-[#486388] shadow-sm"
-                  }`}
-                  type="button"
-                  onClick={() => onChangeFollow(user, !isFollowing)}
-                  disabled={Boolean(change?.pending)}
-                  aria-busy={Boolean(change?.pending)}
-                >
-                  {isFollowing ? "Unfollow" : "Follow"}
-                </button>
-              )}
-            </div>
-          );
-        })
-      )}
-    </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

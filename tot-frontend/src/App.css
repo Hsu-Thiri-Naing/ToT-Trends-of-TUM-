@@ -1,14 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Balthazar&display=swap");
 @import "tailwindcss";
 
-body {
-  max-width: 100vw;
-  max-height: 100vh;
-  box-sizing: border-box;
-  background-image: url("/assets/images/totLoginbg.jpg");
-  background-repeat: no-repeat;
-  background-size: cover;
-}
 
 .font-balthazar {
   font-family: "Balthazar", serif;
@@ -62,52 +54,6 @@ body {
   }
 }
 
-/* HTML: <div class="loader"></div> */
-.loader {
-  display: inline-flex;
-  gap: 5px;
-  animation: l3-0 1s infinite;
-  transform-origin: 50% calc(100% + 2.5px);
-  position: absolute;
-  left: 550px;
-  top: 200px;
-}
-.loader:before,
-.loader:after {
-  content: "";
-  width: 40px;
-  aspect-ratio: 1;
-  box-shadow: 0 0 0 3px inset #fff;
-}
-.loader:after {
-  transform-origin: -2.5px calc(100% + 2.5px);
-  animation: l3-1 1s infinite;
-}
-@keyframes l3-1 {
-  50%,
-  100% {
-    transform: rotate(180deg);
-  }
-}
-@keyframes l3-0 {
-  0%,
-  50% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(90deg);
-  }
-}
-
-/* ============ Responsive fixes ============ */
-@media (max-width: 1023px) {
-    .loader {
-        left: 50%;
-        top: 40%;
-        transform: translate(-50%, -50%);
-    }
-}
-
 @media (prefers-reduced-motion: no-preference) {
     .view-enter,
     .profile-tab-content {
@@ -118,4 +64,28 @@ body {
 @keyframes view-enter {
     from { opacity: 0.78; }
     to { opacity: 1; }
+}
+
+.app-notice {
+  position: fixed;
+  z-index: 1000;
+  inset-block-start: 4rem;
+  inset-inline: 0.75rem;
+  inline-size: fit-content;
+  max-inline-size: min(28rem, calc(100% - 1.5rem));
+  margin-inline: auto;
+  padding: 0.625rem 0.875rem;
+  border-radius: 1rem;
+  color: #7a2941;
+  font-family: system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  text-align: center;
+  pointer-events: none;
+}
+
+@media (width >= 64rem) {
+  .app-notice {
+    inset-block-start: 1rem;
+  }
 }

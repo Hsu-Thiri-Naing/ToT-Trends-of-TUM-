@@ -37,9 +37,7 @@
         rgba(210, 232, 250, 0.56) 64%,
         rgba(226, 231, 251, 0.64)
     );
-    box-shadow:
-        inset 0 1px 2px rgba(255, 255, 255, 0.95),
-        0 6px 18px rgba(46, 75, 122, 0.14);
+    box-shadow: var(--glass-highlight), var(--glass-inner-edge);
     backdrop-filter: blur(16px) saturate(1.25);
     color: var(--comment-ink);
 }
@@ -85,10 +83,7 @@
         rgba(228, 242, 255, 0.32) 54%,
         rgba(184, 214, 245, 0.46)
     );
-    box-shadow:
-        inset 0 1px 2px rgba(255, 255, 255, 0.96),
-        inset 0 -2px 4px rgba(90, 133, 184, 0.14),
-        0 3px 8px rgba(50, 85, 132, 0.15);
+    box-shadow: var(--glass-highlight), var(--shadow-control);
 }
 
 .comment-input {
@@ -135,4 +130,118 @@
 .comment-send:disabled {
     opacity: 0.55;
     cursor: default;
+}
+
+.post-card {
+    min-inline-size: 0;
+    padding: clamp(0.75rem, 2vw, 1.25rem);
+    margin-block-end: 1rem;
+    border-radius: 1.375rem;
+    break-inside: avoid;
+    overflow-wrap: anywhere;
+}
+
+.feed .post-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+.feed-post-header,
+.feed-post-author,
+.feed-post-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-inline-size: 0;
+}
+
+.feed-post-header {
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.feed-post-author {
+    border-radius: 0.75rem;
+    text-align: start;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.feed-post-author img {
+    flex: none;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+}
+
+.feed-post-author:hover strong,
+.feed-shared-label button:hover {
+    text-decoration: underline;
+}
+
+.post-time,
+.feed-shared-label {
+    display: block;
+    color: var(--glass-muted);
+    font-size: 0.75rem;
+}
+
+.feed-shared-label {
+    margin-block-start: 0.5rem;
+}
+
+.feed-shared-label button {
+    color: #235688;
+    cursor: pointer;
+}
+
+.feed-post-delete {
+    display: grid;
+    inline-size: 2rem;
+    block-size: 2rem;
+    place-items: center;
+    border-radius: 50%;
+    color: #a12c49;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.feed-post-body {
+    display: grid;
+    gap: 0.625rem;
+    margin-block: 0.875rem;
+}
+
+.feed-post-text {
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+}
+
+.feed-post-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding-block-start: 0.625rem;
+    border-block-start: 1px solid rgb(68 111 161 / 18%);
+    color: var(--glass-muted);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.feed-reaction {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.post-error {
+    margin-block-end: 0.5rem;
+    color: #922d3f;
+    font-size: 0.8125rem;
+}
+
+.post-comments-section {
+    margin-block-start: 0.625rem;
 }

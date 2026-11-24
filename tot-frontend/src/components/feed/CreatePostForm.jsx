@@ -143,7 +143,7 @@ export default function CreatePostForm({
 
   return (
     <article
-      className="create-post-form boxshadow px-3 sm:px-5 py-3 rounded-2xl mt-3 mb-2 mx-auto shadow-lg w-full max-w-full"
+      className="create-post-form glass-lens glass-responsive px-3 sm:px-5 py-3 rounded-2xl mt-3 mb-2 mx-auto w-full max-w-full"
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) {
           const hasPendingMedia =
@@ -169,7 +169,7 @@ export default function CreatePostForm({
             />
           </div>
           <textarea
-            className="post-textarea text-base sm:text-xl w-full resize-none bg-transparent outline-none placeholder-black/70 focus:placeholder-black/20 font-balthazar min-h-[38px] pt-1 leading-snug"
+            className="post-textarea text-base w-full resize-none bg-transparent outline-none placeholder:text-slate-600 min-h-[38px] pt-1 leading-snug"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onFocus={() => setExpanded(true)}
@@ -190,7 +190,7 @@ export default function CreatePostForm({
                 <button
                   type="button"
                   onClick={removeMedia}
-                  className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center text-lg leading-none transition-colors cursor-pointer shadow-md"
+                  className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center text-lg leading-none transition-colors cursor-pointer shadow-control"
                   title="Remove media"
                   aria-label="Remove media"
                 >

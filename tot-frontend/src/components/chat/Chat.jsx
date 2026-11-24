@@ -1,5 +1,5 @@
-// src/components/chat/Chat.jsx
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { LuArrowLeft, LuSend } from "react-icons/lu";
 import apiClient from "../../api/apiClient";
 import UserAvatar from "../common/UserAvatar";
 import "./Chat.css";
@@ -21,10 +21,11 @@ const Chat = ({
   const [sendError, setSendError] = useState(null);
   const [sending, setSending] = useState(false);
   const [connected, setConnected] = useState(Boolean(socket?.connected));
-  const messagesEndRef = useRef(null);
+  const messageList = useRef(null);
 
-  useEffect(() => {
-    if (!loadingHistory) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  useLayoutEffect(() => {
+    const list = messageList.current;
+    if (!loadingHistory && list) list.scrollTop = list.scrollHeight;
   }, [messages, loadingHistory]);
 
   useEffect(() => {
@@ -89,7 +90,8 @@ const Chat = ({
     };
   }, [socket, currentUserId, otherUserId]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = (event) => {
+    event.preventDefault();
     const content = newMessage.trim();
     if (!content || !socket?.connected || sending) return;
     setSending(true);
@@ -101,94 +103,64 @@ const Chat = ({
     });
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  // Use the provided name or fallback
   const displayName = otherUserName || `User ${otherUserId || "Unknown"}`;
+  const status = isOtherUserOnline ? "Online" : "Offline";
 
   return (
-    <section className="view-enter container w-full mx-auto order-2 lg:flex-8 rounded-3xl h-[calc(100dvh-135px)] lg:h-[calc(100vh-35px)] lg:mr-4 my-0 lg:my-4 bg-[#5978A433] font-balthazar py-2 lg:py-4 px-1 sm:px-2 lg:px-4 min-w-0 flex flex-col">
-      <div className="chat-container boxshadow rounded-3xl sm:rounded-4xl px-3 sm:px-7 pt-4 pb-3 mx-auto flex flex-col gap-2 w-full h-full">
-        {/* Chat Header */}
-        <div className="chat-header flex items-center gap-3 border-b-2 border-b-cyan-50/70 pb-3 flex-none">
-          {/* Mobile Back Button */}
+    <section className="chat-view view-enter order-2 lg:flex-8" aria-label="Conversation">
+      <div className="chat-container liquid-glass">
+        <header className="chat-conversation-header">
           {onBackToUserList && (
             <button
+              type="button"
               onClick={onBackToUserList}
-              className="lg:hidden text-2xl text-[#646cff] font-bold p-1 -ml-1 cursor-pointer"
-              title="Back"
-              aria-label="Back"
+              className="chat-back glass-lens"
+              aria-label="Back to Trendmates"
             >
-              ←
+              <LuArrowLeft aria-hidden="true" />
             </button>
           )}
 
-          <div className="profile-avatar relative flex-shrink-0">
-            <UserAvatar
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover"
-              src={otherUserAvatar || otherUserId?.avatar}
-              alt={`${displayName}'s avatar`}
-            />
-            {/* Display Online Status */}
-            <span
-              className={`online-status-chat ${
-                isOtherUserOnline ? "online" : "offline"
-              }`}
-            >
-              <span
-                className={`status-text-chat text-sm absolute -right-2 -bottom-1 text-white px-2 rounded-lg ${
-                  isOtherUserOnline ? "bg-green-500/78 " : "bg-gray-400/78 "
-                }`}
-              >
-                {isOtherUserOnline ? "Here" : "Out"}
+          <button
+            type="button"
+            className="chat-participant"
+            onClick={() => onViewProfile?.(otherUserId)}
+            aria-label={`View profile of ${displayName}`}
+            aria-describedby="chat-presence"
+          >
+            <span className="chat-avatar glass-lens">
+              <UserAvatar src={otherUserAvatar} alt="" width="44" height="44" />
+            </span>
+            <span className="chat-participant-details">
+              <strong className="chat-participant-name">{displayName}</strong>
+              <span className="chat-presence" id="chat-presence" data-online={Boolean(isOtherUserOnline)}>
+                {status}
               </span>
             </span>
-          </div>
+          </button>
+        </header>
 
-          <span
-            onClick={() => {
-              if (onViewProfile && otherUserId) {
-                onViewProfile(
-                  typeof otherUserId === "object"
-                    ? otherUserId.id
-                    : otherUserId,
-                );
-              }
-            }}
-            className="cursor-pointer text-2xl sm:text-3xl text-[#646cff] chicle-regular leading-none truncate"
-          >
-            {displayName}
-          </span>
-        </div>
-
-        {/* Message List */}
-        <div className="chat-messages-container no-scrollbar flex-1 overflow-y-auto py-2">
+        <div
+          className="chat-messages-container"
+          ref={messageList}
+          role="log"
+          aria-label={`Messages with ${displayName}`}
+          aria-busy={loadingHistory}
+          tabIndex={0}
+        >
           {loadingHistory ? (
-            <div className="chat-placeholder font-balthazar text-lg my-auto text-center">
-              Loading messages...
-            </div>
+            <p className="chat-placeholder">Loading messages…</p>
           ) : messages.length > 0 ? (
-            messages.map((msg) => {
-              const isCurrentUser =
-                msg.sender_id == currentUserId ||
-                (msg.sender && msg.sender.id == currentUserId);
+            messages.map((message) => {
+              const outgoing = String(message.sender_id ?? message.sender?.id) === String(currentUserId);
               return (
                 <div
-                  key={msg.id}
-                  className={`message-bubble boxshadow ${
-                    isCurrentUser ? "message-outgoing" : "message-incoming"
-                  }`}
+                  key={message.id}
+                  className={`message-bubble ${outgoing ? "message-outgoing" : "message-incoming"}`}
                 >
-                  <div className="text-black">{msg.content}</div>
-                  <span className="message-timestamp text-black">
-                    {new Date(
-                      msg.created_at || Date.now(),
-                    ).toLocaleTimeString([], {
+                  <p>{message.content}</p>
+                  <span className="message-timestamp">
+                    {new Date(message.created_at || Date.now()).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
@@ -196,40 +168,38 @@ const Chat = ({
                 </div>
               );
             })
-          ) : (
-            <div className="chat-placeholder font-balthazar text-lg my-auto text-center">
-              <i>Start the conversation with {displayName}...</i>
-            </div>
+          ) : !historyError && (
+            <p className="chat-placeholder">Start a conversation with {displayName}.</p>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         {(sendError || historyError || !connected) && (
-          <p role="status" className="text-sm text-blue-950">
-            {sendError || historyError || "Connecting to chat..."}
+          <p role="status" className="chat-status">
+            {sendError || historyError || "Connecting to chat…"}
           </p>
         )}
 
-        {/* Input Area */}
-        <div className="chat-input-area boxshadow py-2 px-3 rounded-2xl flex items-center justify-between gap-2 flex-none mt-auto">
+        <form className="chat-input-area glass-lens glass-responsive" onSubmit={handleSendMessage}>
           <input
-            className="outline-0 w-full bg-transparent text-black"
             type="text"
+            name="message"
+            aria-label={`Message ${displayName}`}
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder={`Message ${displayName}...`}
+            onChange={(event) => setNewMessage(event.target.value)}
+            placeholder={`Message ${displayName}…`}
+            autoComplete="off"
             readOnly={sending}
             maxLength={5000}
           />
-
           <button
-            className="send-btn w-6 h-6 bg-[url('/assets/images/send.png')] bg-cover bg-center cursor-pointer hover:bg-[url('/assets/images/sends.png')] hover:scale-105 duration-300 flex-shrink-0 disabled:opacity-40"
-            onClick={handleSendMessage}
+            type="submit"
+            className="send-btn glass-primary"
             disabled={!newMessage.trim() || !connected || sending}
-            aria-label="Send"
-          ></button>
-        </div>
+            aria-label="Send message"
+          >
+            <LuSend aria-hidden="true" />
+          </button>
+        </form>
       </div>
     </section>
   );

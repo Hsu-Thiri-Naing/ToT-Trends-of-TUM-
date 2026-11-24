@@ -34,22 +34,6 @@
   font-style: normal;
 }
 
-@keyframes appear {
-  from {
-    opacity: 0;
-    scale: 0.8;
-  }
-  to {
-    opacity: 1;
-    scale: 1;
-  }
-}
-
-.post-card {
-  animation: appear linear;
-  animation-timeline: view();
-  animation-range: entry 0%;
-}
 
 .comShareAni:hover {
   background-color: #8ec5ff;
@@ -133,13 +117,6 @@
   }
 }
 
-.feed {
-  /* box-shadow: rgb(204, 219, 232) 3px 3px 6px 0px inset,
-        rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset; */
-
-  box-shadow: inset 0px 9px 6px 10px #00000024;
-}
-
 .shake:hover {
   -webkit-animation: shake-bottom 0.8s cubic-bezier(0.455, 0.03, 0.515, 0.955)
     both;
@@ -211,4 +188,58 @@
     -webkit-transform: rotate(2deg);
     transform: rotate(2deg);
   }
+}
+
+.feed {
+  container-type: inline-size;
+}
+
+/* Keep cards readable when the desktop rails leave a narrower feed. */
+@container (width < 45rem) {
+  .feed .posts-grid {
+    columns: 1;
+  }
+}
+
+.feed,
+.single-post-view {
+  font-family: system-ui, sans-serif;
+  color: var(--glass-ink);
+}
+
+.feed-intro {
+  border-start-start-radius: inherit;
+  border-start-end-radius: inherit;
+  padding: clamp(0.875rem, 3vw, 1.75rem);
+  background: radial-gradient(ellipse at 10% 0%, rgb(255 255 255 / 46%), transparent 70%);
+}
+
+.feed-intro h1 {
+  font-size: clamp(1.5rem, 4vw, 2.375rem);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.feed-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0 clamp(0.875rem, 3vw, 1.75rem) 0.625rem;
+}
+
+.feed-filter {
+  min-block-size: 2.25rem;
+  padding-inline: 0.75rem;
+  border-radius: 999px;
+  color: #254c78;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.feed-empty {
+  padding: 0.75rem;
+  color: var(--glass-muted);
+  font-size: 0.875rem;
 }

@@ -87,34 +87,22 @@ export default function PasswordResetRequest({ onBackToLogin }) {
     };
 
     return (
-        <section className="auth-section rounded-3xl lg:h-[540px] mx-2 sm:mx-8 my-5 bg-[#5978A433] font-balthazar lg:overflow-hidden py-5 w-full">
-            <div className="edit-profile-container boxshadow  rounded-4xl px-4 sm:px-7 pt-2 mx-auto flex flex-col w-full lg:w-120 lg:h-full lg:overflow-y-auto lg:no-scrollbar">
-                <div className="chat-header -mx-7 py-1 border-b-2 border-b-cyan-50/70 ">
-                    <h2 className="text-2xl text-center">
-                        Password Reset Request
-                    </h2>
-                </div>
+        <section className="auth-detail">
+            <div className="auth-detail-card liquid-glass glass-responsive">
+                <h1>Password Reset Request</h1>
 
-                <p className="font-bold mt-2 mb-1">
-                    <i>
-                        {" "}
-                        Please provide your details to request a password reset.
-                    </i>
-                </p>
+                <p className="auth-description">Enter your ToT and recovery emails to request a password reset.</p>
 
                 {error && (
-                    <div className="error-message text-red-500 cherry-bomb text-sm">
+                    <div className="auth-error" role="alert">
                         {error}
                     </div>
                 )}
                 {successMessage && (
-                    <div className="success-message">{successMessage}</div>
+                    <div className="auth-success" role="status">{successMessage}</div>
                 )}
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="flex flex-col gap-3 mt-1"
-                >
+                <form onSubmit={handleSubmit}>
                     {/* Email Input */}
                     <div className="input-group flex flex-col">
                         {" "}
@@ -124,7 +112,7 @@ export default function PasswordResetRequest({ onBackToLogin }) {
                             TOT Email Address :
                         </label>
                         <input
-                            className="boxshadow2 outline-0 rounded-2xl text-lg px-4 py-1 focus:placeholder-gray-400/50"
+                            className="auth-input"
                             id="email"
                             type="email"
                             name="email"
@@ -144,7 +132,7 @@ export default function PasswordResetRequest({ onBackToLogin }) {
                             Recovery Email :
                         </label>
                         <input
-                            className="boxshadow2 outline-0 rounded-2xl text-lg px-4 py-1 focus:placeholder-gray-400/50"
+                            className="auth-input"
                             id="recovery_email"
                             type="email"
                             name="recovery_email"
@@ -165,7 +153,7 @@ export default function PasswordResetRequest({ onBackToLogin }) {
                             Account Creation Date :
                         </label>
                         <input
-                            className="boxshadow2 outline-0 rounded-2xl text-lg px-4 py-1 focus:placeholder-gray-400/50"
+                            className="auth-input"
                             id="account_creation_date"
                             type="text"
                             name="account_creation_date"
@@ -182,12 +170,7 @@ export default function PasswordResetRequest({ onBackToLogin }) {
                             Additional Details{" "}
                         </label>
                         <textarea
-                            className="
-                            inset-shadow-[0_5px_5px_6px_rgba(0,0,0,0.25)]
-                            rounded-2xl
-                            text-lg
-                            px-4
-                            py-2 outline-0 focus:placeholder-gray-400/50"
+                            className="auth-input"
                             id="message"
                             name="message"
                             placeholder="Additional details or reason for reset (optional) "
@@ -197,9 +180,9 @@ export default function PasswordResetRequest({ onBackToLogin }) {
                         ></textarea>
                     </div>
 
-                    <div className="flex justify-between items-center ">
+                    <div className="auth-form-actions">
                         <button
-                            className="boxshadow2 px-4 py-2 rounded-xl cursor-pointer"
+                            className="auth-submit glass-primary"
                             type="submit"
                             disabled={loading}
                         >
@@ -207,7 +190,7 @@ export default function PasswordResetRequest({ onBackToLogin }) {
                         </button>
 
                         <button
-                            className="boxshadow2 px-4 py-2 rounded-xl cursor-pointer"
+                            className="auth-secondary glass-lens"
                             type="button"
                             onClick={onBackToLogin}
                         >
@@ -216,7 +199,6 @@ export default function PasswordResetRequest({ onBackToLogin }) {
                     </div>
                 </form>
 
-                <p className="switch-link"></p>
             </div>
         </section>
     );

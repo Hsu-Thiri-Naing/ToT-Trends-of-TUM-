@@ -22,6 +22,17 @@ import { readScrollPosition, restoreScrollPosition } from "./utils/scrollPositio
 import "./App.css";
 
 const FEED_CACHE_MS = 30_000;
+const glassPointer = window.matchMedia("(hover: hover) and (prefers-reduced-motion: no-preference)");
+
+function reflectGlass(event) {
+    if (event.pointerType !== "mouse" || !glassPointer.matches) return;
+    const surface = event.target.closest(".glass-responsive");
+    if (!surface) return;
+    const bounds = surface.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    surface.style.setProperty("--glass-pointer-x", `${Math.round((event.clientX - bounds.left) / bounds.width * 100)}%`);
+    surface.style.setProperty("--glass-pointer-y", `${Math.round((event.clientY - bounds.top) / bounds.height * 100)}%`);
+}
 
 function updateMembership(members, member, include) {
     const exists = members.some((item) => item.id === member.id);
@@ -566,7 +577,8 @@ export default function App() {
     }, [token]);
 
     useEffect(() => {
-        if (!userId || currentView !== "feed" || Date.now() - feedLoadedAt.current < FEED_CACHE_MS) return;
+        const showsTrendmates = currentView === "feed" || currentView === "chat";
+        if (!userId || !showsTrendmates || Date.now() - feedLoadedAt.current < FEED_CACHE_MS) return;
         const controller = new AbortController();
         async function fetchFeed() {
             try {
@@ -607,19 +619,18 @@ export default function App() {
                     selectedCats={selectedCats}
                     toggleCat={toggleCat}
                 />
-                <main className="centered-main">
-                    <article aria-busy="true"></article>
-                    <p className="loader"></p>
+                <main className="centered-main grid min-h-dvh place-items-center">
+                    <p className="glass-lens rounded-full px-5 py-3 text-sm font-semibold" role="status">Loading ToT…</p>
                 </main>
             </div>
         );
     }
 
     return (
-        <div className="centered-container min-h-screen lg:h-screen lg:overflow-hidden">
-            <main className="centered-main flex flex-col lg:flex-row gap-2 pb-[72px] lg:pb-0">
+        <div className={`centered-container min-h-screen${user ? " lg:h-screen lg:overflow-hidden" : ""}`}>
+            <main onPointerMove={reflectGlass} className={`centered-main flex flex-col lg:flex-row gap-2${user ? " pb-[72px] lg:pb-0" : ""}`}>
                 {error && (
-                    <div className="error-message text-red-500 cherry-bomb absolute text-sm sm:text-xl left-4 right-4 sm:left-120 sm:right-auto z-99 top-5 text-center">
+                    <div className="app-notice glass-lens" role="status">
                         {error}
                     </div>
                 )}
@@ -726,30 +737,23 @@ export default function App() {
                                     socket={socket}
                                     onBackToUserList={() => setChatWithUser(null)}
                                 />
-                                <div className="hidden lg:block lg:flex-1 lg:h-[calc(100vh-35px)] lg:min-w-52">
-                                    <UserList
-                                        users={usersList}
-                                        currentUser={user}
-                                        onViewProfile={viewProfile}
-                                        onChat={initiateChat}
-                                        onReportUser={handleSwitchToReportUser}
-                                        onlineUsers={onlineUsers}
-                                    />
-                                </div>
+                                <UserList
+                                    users={usersList}
+                                    currentUser={user}
+                                    onViewProfile={viewProfile}
+                                    onChat={initiateChat}
+                                    onlineUsers={onlineUsers}
+                                    desktopOnly
+                                />
                             </>
                         ) : (
                             <>
-                                <section className="view-enter order-2 lg:flex-8 lg:h-[calc(100vh-35px)] min-w-0 my-2 lg:my-4 flex flex-col items-center justify-center w-full">
-                                    <div className="w-full min-h-[calc(100vh-120px)] sm:min-h-0 sm:w-fit mx-auto my-auto rounded-2xl text-teamcolor bg-[#5978A433]/30 bg-blur-2xl cherry-bomb text-xl overflow-hidden p-10 flex flex-col items-center justify-center">
-                                        <h3>You have no recent chats.</h3>
-                                        <p className="mb-3">
-                                            Connect with trendmates to have some fun!
-                                        </p>
-                                        <button
-                                            onClick={() => goToView("feed")}
-                                            className="py-2 px-6 boxshadow2 rounded-xl cursor-pointer"
-                                        >
-                                            Back
+                                <section className="chat-empty-view view-enter order-2 lg:flex-8">
+                                    <div className="chat-empty liquid-glass">
+                                        <h1>Start a conversation</h1>
+                                        <p>Choose a Trendmate you follow who follows you back.</p>
+                                        <button type="button" onClick={() => goToView("feed")} className="glass-lens">
+                                            Back to feed
                                         </button>
                                     </div>
                                 </section>

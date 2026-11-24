@@ -47,7 +47,7 @@ const ReactionButton = ({
       imgactive = "";
   }
   return (
-    <div className="flex gap-2">
+    <div className="feed-reaction">
       <button
         className={`react jello-vertical hover:scale-125 ${type.toLowerCase()} ${
           isActive ? "active" : ""
@@ -55,6 +55,7 @@ const ReactionButton = ({
         onClick={() => onClick(type.toLowerCase())}
         disabled={disabled}
         aria-label={ariaLabel}
+        aria-pressed={isActive}
         style={{
           width: "30px",
           height: "30px",
@@ -361,77 +362,64 @@ const Post = ({
 
   // --- Render Return ---
   return (
-    <article className="post-card boxshadow w-full h-fit px-4 sm:px-7 pt-5 pb-8 rounded-3xl shadow-lg relative break-inside-avoid mb-4">
+    <article className="post-card liquid-glass">
       {error && (
-        <div className="post-error error-message text-red-500 cherry-bomb text-xl absolute left-10 top-5">
+        <div className="post-error" role="alert">
           {error}
         </div>
       )}
 
-      <header className="post-header mb-4 flex items-center">
-        {/* Author Avatar and Name */}
-        <div
-          className="post-author cursor-pointer mr-2"
-          onClick={() => onViewProfile && onViewProfile(post.user_id, post.user)}
+      <header className="post-header feed-post-header">
+        <button
+          type="button"
+          className="feed-post-author"
+          onClick={() => onViewProfile?.(post.user_id, post.user)}
         >
           <UserAvatar
             src={post.user?.avatar || post.user?.profile_picture}
-            alt={`${post.user?.name || "User"}'s avatar`}
-            className="post-author-avatar rounded-2xl w-12 h-12 object-cover"
+            alt=""
+            width="40"
+            height="40"
+            className="glass-lens rounded-xl object-cover"
           />
-        </div>
+          <span>
+            <strong>{post.user?.name || "Unknown user"}</strong>
+            <small className="post-time">{formatTimeAgo(post.created_at)}</small>
+          </span>
+        </button>
 
-        <div className="flex justify-between items-start w-full">
-          <div className="flex flex-col ">
-            <strong className="roboto-serif-300 font-bold text-xl sm:text-2xl ">
-              {post.user?.name || "Unknown User"}
-            </strong>
-            <small className="post-time">
-              {formatTimeAgo(post.created_at)}
-            </small>
-            {post.shared_post_id && (
-              <span className="shared-indicator">
-                <span> shared </span>
-                <strong
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent triggering parent onClick
-                    onViewProfile?.(post.shared_post?.user_id, post.shared_post?.user);
-                  }}
-                  style={{ cursor: "pointer", color: "blue" }}
-                >
-                  {post.shared_post?.user?.name}
-                </strong>
-                's post
-              </span>
-            )}
-          </div>
-
-          <div className="flex relative ">
-            {post.category && (
-              <span className="cat-badge absolute right-8 boxshadow px-2 rounded-2xl text-lg">
-                {CATEGORY_NAMES[post.category] || post.category}
-              </span>
-            )}
-
-            {/* Delete Button (only for author) */}
-            {/* outline-2 text-xs outline-red-600 px-2 font-black rounded-full w-fit bg-red-400  */}
-            {isPostAuthor && (
-              <button
-                onClick={handleDelete}
-                className="delete-button shake cherry-bomb text-4xl text-red-600 absolute -top-4 -right-0.5 cursor-pointer "
-                aria-label="Delete post"
-              >
-                &times;
-              </button>
-            )}
-          </div>
+        <div className="feed-post-meta">
+          {post.category && (
+            <span className="cat-badge glass-lens px-2 py-0.5 rounded-full">
+              {CATEGORY_NAMES[post.category] || post.category}
+            </span>
+          )}
+          {isPostAuthor && (
+            <button type="button" onClick={handleDelete} className="feed-post-delete glass-lens" aria-label="Delete post">
+              &times;
+            </button>
+          )}
         </div>
       </header>
 
-      <div className="post-body mb-8 w-full flex flex-col">
+      {post.shared_post_id && (
+        <p className="feed-shared-label">
+          {post.shared_post?.user?.name ? (
+            <>
+              Shared{" "}
+              <button type="button" onClick={() => onViewProfile?.(post.shared_post.user_id, post.shared_post.user)}>
+                {post.shared_post.user.name}
+              </button>
+              ’s post
+            </>
+          ) : "Shared a post"}
+        </p>
+      )}
+
+      <div className="post-body feed-post-body">
         {/* Current post body (only if exists and is not a share) */}
         {post.body && !post.shared_post_id && (
-          <p className="text-lg mb-2 ">{post.body}</p>
+          <p className="feed-post-text">{post.body}</p>
         )}
 
         {/* Current post media */}
@@ -591,7 +579,7 @@ const Post = ({
       </div>
 
       <div className="">
-        <div className="post-footer absolute bottom-4 left-5 right-5 flex justify-between ">
+        <div className="post-footer feed-post-footer">
           <div className="post-reactions flex gap-2 sm:gap-3">
             <ReactionButton
               type="Like"
@@ -661,7 +649,7 @@ const Post = ({
         </div>
 
         {isCommentsVisible && (
-          <div className="post-comments-section mb-8">
+          <div className="post-comments-section">
             {isLoadingComments && (
               <p className="comment-status" role="status">Loading comments...</p>
             )}

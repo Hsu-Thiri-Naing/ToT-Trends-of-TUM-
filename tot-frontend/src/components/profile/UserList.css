@@ -1,78 +1,229 @@
-@import url("https://fonts.googleapis.com/css2?family=Balsamiq+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Roboto+Serif:ital,opsz,wght@0,8..144,100..900;1,8..144,100..900&display=swap");
-@import "tailwindcss";
-
-.balsamiq-sans {
-  font-family: "Balsamiq Sans", sans-serif;
-  font-weight: 400;
-  font-style: normal;
-}
-
-.roboto-serif-800 {
-  font-family: "Roboto Serif", serif;
-  font-optical-sizing: auto;
-  font-weight: 800;
-  font-style: normal;
-}
-
-/* Sleek scrollbar for Trendmates user list */
-.user-list::-webkit-scrollbar,
-.users-grid::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-.user-list::-webkit-scrollbar-thumb,
-.users-grid::-webkit-scrollbar-thumb {
-  background: rgba(89, 120, 164, 0.3);
-  border-radius: 4px;
-}
-
-.user-list::-webkit-scrollbar-thumb:hover,
-.users-grid::-webkit-scrollbar-thumb:hover {
-  background: rgba(89, 120, 164, 0.6);
-}
-
-.textxxs {
-  font-size: 9px;
+.trendmates {
+  min-inline-size: 0;
+  margin-inline: 0.5rem;
+  color: #193759;
+  font-family: system-ui, sans-serif;
 }
 
 .user-list {
-  /* box-shadow: rgba(50, 50, 93, 0.25) 0px 10px 10px -12px inset,
-        rgba(0, 0, 0, 0.3) 0px 18px 30px -1px inset; */
-
-  box-shadow: inset 0px 6px 4px 7px #00000024;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1.375rem;
 }
 
-/* Soften the heavy inset shadow on the slim mobile horizontal bar */
-@media (max-width: 1023px) {
-  .user-list {
-    box-shadow: inset 0px 2px 2px 2px #00000018;
+.trendmates-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  margin-inline: 0.75rem;
+  padding-block: 0.625rem 0.5rem;
+  border-block-end: 1px solid rgb(68 111 161 / 18%);
+}
+
+.trendmates-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.875rem;
+  font-weight: 750;
+}
+
+.trendmates-header svg {
+  inline-size: 1.0625rem;
+  block-size: 1.0625rem;
+}
+
+.trendmates-count {
+  min-inline-size: 1.625rem;
+  padding: 0.0625rem 0.375rem;
+  border: 1px solid rgb(255 255 255 / 76%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 36%);
+  color: #2d5079;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.trendmates-empty {
+  padding: 0.75rem;
+  color: #415b78;
+  font-size: 0.8125rem;
+}
+
+.users-grid {
+  display: flex;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(65 108 155 / 42%) transparent;
+}
+
+.trendmate {
+  display: flex;
+  flex: 0 0 3.875rem;
+  align-items: center;
+  gap: 0.25rem;
+  min-inline-size: 0;
+  border: 1px solid transparent;
+  border-radius: 0.875rem;
+}
+
+.trendmate:is(:hover, :focus-within) {
+  border-color: rgb(255 255 255 / 82%);
+  background: rgb(255 255 255 / 40%);
+}
+
+.trendmate-profile {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3125rem;
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding: 0.25rem 0.125rem;
+  border-radius: 0.75rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+.trendmate-avatar {
+  position: relative;
+  display: grid;
+  flex: none;
+  inline-size: 2.625rem;
+  block-size: 2.625rem;
+  place-items: center;
+  border-radius: 0.8125rem;
+}
+
+.trendmate-avatar img {
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.trendmate-dot {
+  position: absolute;
+  inset-inline-end: -0.125rem;
+  inset-block-end: -0.125rem;
+  inline-size: 0.6875rem;
+  block-size: 0.6875rem;
+  border: 2px solid #f4f9ff;
+  border-radius: 50%;
+  background: #7a8da6;
+}
+
+.trendmate-dot[data-online="true"] {
+  background: #159267;
+}
+
+.trendmate-details {
+  position: relative;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  text-align: center;
+}
+
+.trendmate-name {
+  display: block;
+  overflow: hidden;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trendmate-status {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.trendmate-chat {
+  display: none;
+}
+
+@media (width >= 64rem) {
+  .trendmates {
+    align-self: flex-start;
+    flex: 0 0 clamp(13.5rem, 18vw, 17rem);
+    margin: 1rem 1rem 0 0;
   }
-}
 
+  .user-list {
+    max-block-size: calc(100dvh - 2rem);
+    border-radius: 1.5rem;
+  }
 
+  .trendmates-header {
+    margin-inline: 0.875rem;
+    padding-block: 0.875rem 0.625rem;
+  }
 
-.boxshadow2 {
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset -4px -2px 0.12px rgba(255, 255, 255, 0.5),
-    2px 4px 4px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  /* border-bottom: 1px solid rgba(255, 255, 255, 0.18);
-    border-right: 1px solid rgba(255, 255, 255, 0.18); */
-  border-top: 2px solid rgba(89, 120, 164, 0.3);
-  border-left: 3px solid rgba(89, 120, 164, 0.3);
-}
+  .trendmates-header h2 {
+    font-size: 1rem;
+  }
 
-.boxshadow2:active {
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  /* border-bottom: 1px solid rgba(89, 120, 164, 0.3);
-    border-right: 1px solid rgba(89, 120, 164, 0.3); */
-  border-top: 2px solid rgba(89, 120, 164, 0.3);
-  border-left: 3px solid rgba(89, 120, 164, 0.3);
+  .users-grid {
+    flex-direction: column;
+    gap: 0.125rem;
+    min-block-size: 0;
+  }
+
+  .trendmate {
+    flex: none;
+    padding-inline-end: 0.1875rem;
+  }
+
+  .trendmate-profile {
+    flex-direction: row;
+    gap: 0.5rem;
+    padding-inline: 0.25rem;
+  }
+
+  .trendmate-avatar {
+    inline-size: 2.375rem;
+    block-size: 2.375rem;
+  }
+
+  .trendmate-details {
+    text-align: start;
+  }
+
+  .trendmate-name {
+    font-size: 0.8125rem;
+  }
+
+  .trendmate-status {
+    position: static;
+    display: block;
+    inline-size: auto;
+    block-size: auto;
+    clip-path: none;
+    color: #425d7c;
+    font-size: 0.6875rem;
+  }
+
+  .trendmate-chat {
+    display: grid;
+    flex: none;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    place-items: center;
+    border-radius: 0.8125rem;
+  }
+
+  .trendmate-chat svg {
+    inline-size: 1rem;
+    block-size: 1rem;
+  }
 }

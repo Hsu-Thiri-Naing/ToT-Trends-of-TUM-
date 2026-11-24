@@ -25,5 +25,5 @@
 
 .status-dot.on {
   background: #00b894;
-  box-shadow: 0 0 0 2px #ffffff, 0 0 8px #00b894;
+  box-shadow: var(--shadow-control);
 }

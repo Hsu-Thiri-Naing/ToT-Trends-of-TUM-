@@ -45,12 +45,12 @@ const Feed = ({
       <div className="view-enter no-scrollbar lg:h-[calc(100vh-35px)] lg:overflow-y-auto px-4 order-2 lg:flex-8 min-w-0">
         <div className="single-post-view lg:mr-3">
           <div className="flex flex-wrap justify-between items-center gap-2 px-2 sm:px-0">
-            <h3 className="py-2 px-3 border-2 rounded-2xl border-teamcolor w-fit cherry-bomb my-6">
+            <h3 className="text-xl font-bold my-5">
               Original Post
             </h3>
             <button
               onClick={() => setSelectedPostId(null)}
-              className="back-button boxshadow rounded-2xl py-2 px-3 my-6  cursor-pointer "
+              className="back-button glass-lens rounded-full py-2 px-4 my-5 text-sm font-semibold"
             >
               ← Back to Feed
             </button>
@@ -75,13 +75,10 @@ const Feed = ({
 
   return (
     <section className="view-enter order-2 lg:flex-8 lg:max-h-screen min-w-0">
-      <div ref={feedPanel} className="feed lg:overflow-y-auto no-scrollbar lg:h-[calc(100vh-35px)] outline-cyan-50 outline-1 rounded-3xl  w-full mx-auto my-4 bg-gray-400/10 font-balthazar lg:overflow-hidden">
-        <div className="border-b border-b-cyan-50 py-2 px-4 sm:px-8">
+      <div ref={feedPanel} className="feed lg:overflow-y-auto no-scrollbar lg:h-[calc(100vh-35px)] liquid-glass rounded-3xl mx-2 my-1 lg:mx-0 lg:my-4">
+        <div className="feed-intro">
           <header>
-            <h3 className="text-center text-xl sm:text-2xl text-blue-500 font-black mt-3 sm:mt-4">
-              Hello, <span className="text-blue-900">{user?.name}</span>! Ready
-              to explore?
-            </h3>
+            <h1>Hi, {user?.name}</h1>
           </header>
           <CreatePostForm
             onCreatePost={onCreatePost}
@@ -91,17 +88,14 @@ const Feed = ({
         </div>
 
         {/* Category filter UI on the Feed */}
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-4 py-4 sm:py-6 px-2 border-b border-white/20 relative z-10">
+        <div className="feed-filters" role="group" aria-label="Filter posts by category">
           {categories?.map((cat) => (
             <button
               key={cat.id}
+              type="button"
               onClick={() => toggleCat(cat.id)}
               aria-pressed={selectedCats.includes(cat.id)}
-              className={`boxshadow px-2 py-1 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-colors duration-150 backdrop-blur-md shadow-lg ${
-                selectedCats.includes(cat.id)
-                  ? "text-blue-800 bg-white/65"
-                  : "bg-white/40 text-gray-800 border-white/50 hover:bg-white/60"
-              }`}
+              className="feed-filter glass-lens"
             >
               {cat.name}
             </button>
@@ -122,7 +116,7 @@ const Feed = ({
               />
             ))
           ) : (
-            <p className="error-message text-red-400 cherry-bomb mt-10 text-xl">
+            <p className="feed-empty">
               No posts match the selected categories.
             </p>
           )}

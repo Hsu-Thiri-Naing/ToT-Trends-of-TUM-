@@ -1,118 +1,178 @@
-@import url("https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Balthazar&display=swap");
-@import "tailwindcss";
-
-@theme {
-    --color-teamcolor: #5978a4;
+.auth-page,
+.auth-detail {
+    position: relative;
+    display: grid;
+    align-content: start;
+    justify-items: center;
+    flex: 1;
+    min-inline-size: 0;
+    inline-size: 100%;
+    padding: 1rem;
+    color: var(--glass-ink);
+    font-family: system-ui, sans-serif;
 }
 
-.cherry-bomb {
-    font-family: "Cherry Bomb One", system-ui;
+.auth-page {
+    gap: 0.75rem;
+}
+
+.auth-about {
+    justify-self: end;
+    padding: 0.5rem 0.875rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.auth-glass-panel,
+.auth-detail-card {
+    inline-size: min(100%, 27rem);
+    padding: clamp(1.125rem, 4vw, 2rem);
+    border-radius: 1.75rem;
+    box-shadow: var(--glass-highlight), var(--shadow-overlay);
+}
+
+.auth-detail-card {
+    inline-size: min(100%, 34rem);
+}
+
+.auth-logo {
+    display: block;
+    margin: 0 auto 0.75rem;
+    border: 1px solid white;
+    border-radius: 50%;
+    box-shadow: var(--shadow-control);
+}
+
+.auth-glass-panel h1,
+.auth-detail-card h1 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 750;
+    line-height: 1.12;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+}
+
+.auth-glass-panel h1 {
+    text-align: center;
+}
+
+.auth-form,
+.auth-detail-card form,
+.auth-detail-card .input-group {
+    display: grid;
+    gap: 0.75rem;
+    margin-block-start: 1rem;
+}
+
+.auth-detail-card .input-group {
+    gap: 0.3125rem;
+    margin-block-start: 0;
+}
+
+.auth-form label,
+.auth-detail-card label {
+    display: grid;
+    gap: 0.3125rem;
+    color: #274c74;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.auth-input {
+    inline-size: 100%;
+    min-block-size: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgb(76 135 198 / 34%);
+    border-radius: 0.875rem;
+    background: rgb(251 254 255 / 57%);
+    box-shadow: var(--glass-highlight);
+    color: var(--glass-ink);
+    font-size: 1rem;
     font-weight: 400;
-    font-style: normal;
 }
 
-.font-balthazar {
-    font-family: "Balthazar", serif;
-    font-weight: 200;
-    font-style: normal;
+.auth-input::placeholder {
+    color: var(--glass-muted);
 }
 
-.boxshadow1 {
-    background: rgba(255, 255, 255, 0.05);
-    box-shadow: inset -4px -2px 0.12px rgba(255, 255, 255, 0.5),
-        2px 4px 4px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    /* border-bottom: 1px solid rgba(255, 255, 255, 0.18);
-    border-right: 1px solid rgba(255, 255, 255, 0.18); */
-    border-top: 2px solid rgba(89, 120, 164, 0.3);
-    border-left: 3px solid rgba(89, 120, 164, 0.3);
+.auth-submit,
+.auth-secondary {
+    min-block-size: 2.75rem;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
 }
 
-.btnHover:hover {
-    border: 2px solid #5978a4;
-    background-color: white;
-    color: #5978a4;
-    transition: all 0.3s ease-in-out;
+.auth-submit:disabled {
+    opacity: 0.65;
+    cursor: wait;
 }
 
-.aboutHover:hover {
-    background-color: #5978a4;
-    outline: 1px solid #5978a4;
-    color: white;
-    transition: all 0.2s ease-in-out;
+.auth-reset-link,
+.auth-switch button {
+    color: #235688;
+    font-weight: 700;
+    cursor: pointer;
 }
 
-.error-message {
-    -webkit-animation: shake-bottom 0.8s cubic-bezier(0.455, 0.03, 0.515, 0.955)
-        both;
-    animation: shake-bottom 0.8s cubic-bezier(0.455, 0.03, 0.515, 0.955) both;
+.auth-reset-link {
+    justify-self: end;
+    font-size: 0.8125rem;
 }
 
-@-webkit-keyframes shake-bottom {
-    0%,
-    100% {
-        -webkit-transform: rotate(0deg);
-        transform: rotate(0deg);
-        -webkit-transform-origin: 50% 100%;
-        transform-origin: 50% 100%;
-    }
-    10% {
-        -webkit-transform: rotate(2deg);
-        transform: rotate(2deg);
-    }
-    20%,
-    40%,
-    60% {
-        -webkit-transform: rotate(-4deg);
-        transform: rotate(-4deg);
-    }
-    30%,
-    50%,
-    70% {
-        -webkit-transform: rotate(4deg);
-        transform: rotate(4deg);
-    }
-    80% {
-        -webkit-transform: rotate(-2deg);
-        transform: rotate(-2deg);
-    }
-    90% {
-        -webkit-transform: rotate(2deg);
-        transform: rotate(2deg);
-    }
+.auth-switch {
+    margin-block-start: 1rem;
+    color: var(--glass-muted);
+    font-size: 0.8125rem;
+    text-align: center;
 }
-@keyframes shake-bottom {
-    0%,
-    100% {
-        -webkit-transform: rotate(0deg);
-        transform: rotate(0deg);
-        -webkit-transform-origin: 50% 100%;
-        transform-origin: 50% 100%;
+
+.auth-reset-link:hover,
+.auth-switch button:hover {
+    text-decoration: underline;
+}
+
+.auth-error,
+.auth-success,
+.auth-description {
+    margin-block-start: 0.625rem;
+    color: var(--glass-muted);
+    font-size: 0.875rem;
+}
+
+.auth-error {
+    color: #922d3f;
+}
+
+.auth-success {
+    color: #12604c;
+}
+
+.auth-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-block-start: 0.375rem;
+}
+
+@media (width >= 64rem) {
+    .auth-page {
+        min-block-size: 100dvh;
+        align-content: center;
+        padding-block: 2rem;
     }
-    10% {
-        -webkit-transform: rotate(2deg);
-        transform: rotate(2deg);
+
+    .auth-about {
+        position: absolute;
+        inset-block-start: 1rem;
+        inset-inline-end: 1rem;
     }
-    20%,
-    40%,
-    60% {
-        -webkit-transform: rotate(-4deg);
-        transform: rotate(-4deg);
-    }
-    30%,
-    50%,
-    70% {
-        -webkit-transform: rotate(4deg);
-        transform: rotate(4deg);
-    }
-    80% {
-        -webkit-transform: rotate(-2deg);
-        transform: rotate(-2deg);
-    }
-    90% {
-        -webkit-transform: rotate(2deg);
-        transform: rotate(2deg);
+
+    .auth-detail {
+        max-block-size: 100dvh;
+        overflow-y: auto;
     }
 }
