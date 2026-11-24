@@ -24,79 +24,27 @@ The project is split into three distinct, decoupled services:
 
 ---
 
-## 🚀 Getting Started
+## Local development with OpenCode
 
-Follow these step-by-step instructions to get the entire application running on your local machine.
+~~~sh
+git clone https://github.com/AungPhyoeNaing/tot-project-show.git
+cd tot-project-show
+opencode
+~~~
 
-### Prerequisites
-Make sure you have the following installed:
-* **PHP** (8.1 or higher) & **Composer**
-* **Node.js** (v16 or higher) & **npm**
-* **Git**
+OpenCode ထဲမှာ **ဒီ project ကို local dev နဲ့ run ပေးပါ** လို့ရေးပါ။ Repo ရဲ့ [AGENTS.md](AGENTS.md) အတိုင်း agent က setup လုပ်ပြီး frontend, API နဲ့ chat server ကို စစ်ပေးပါမယ်။
 
-### 1. Clone the Repository
+On Windows, you can also start everything directly from the repository root:
 
-```bash
-git clone https://github.com/AungPhyoeNaing/TrendsOfTUM-2025.git
-cd TrendsOfTUM-2025
-```
+~~~powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Start-Portfolio.ps1
+~~~
 
-### 2. Setup the Laravel API Backend
-The backend utilizes SQLite for out-of-the-box local development without requiring a separate SQL server.
+First setup needs internet and WinGet if PHP or Node.js is missing. Windows may ask for installer approval. On macOS or Linux, see the prerequisites in [AGENTS.md](AGENTS.md), then run `bash scripts/start-local.sh`.
 
-```bash
-cd api.totumdy.com
+Open [the local app](http://127.0.0.1:5173). Sign in as **maya@tot.com** with **TotPortfolio1!**. Sign in as **leo@tot.com** in a private window with the same password to try live chat. The launcher prints how to stop the services.
 
-# Install PHP dependencies
-composer install
-
-# Set up environment variables
-cp .env.example .env
-# Ensure your .env has DB_CONNECTION=sqlite and DB_DATABASE=.../database.sqlite
-
-# Generate application key
-php artisan key:generate
-
-# Create the SQLite database file
-touch database/database.sqlite
-
-# Run database migrations and seeders (to populate initial data)
-php artisan migrate --seed
-
-# Link the storage directory (CRITICAL for media uploads to work)
-php artisan storage:link
-
-# Start the Laravel development server (runs on http://127.0.0.1:8000 by default)
-php artisan serve
-```
-
-### 3. Setup the Node.js Chat Server
-Open a **new terminal window** and navigate to the chat server directory.
-
-```bash
-cd chat-server-nodejs-v2
-
-# Install Node dependencies
-npm install
-
-# Start the real-time server (runs on http://localhost:3001 by default)
-node server.js
-```
-
-### 4. Setup the React Frontend
-Open a **third terminal window** and navigate to the frontend directory.
-
-```bash
-cd tot-frontend
-
-# Install frontend dependencies
-npm install
-
-# Start the Vite development server (runs on http://localhost:5173 by default)
-npm run dev
-```
-
----
+The repo includes a populated SQLite demo snapshot. First startup copies it to `api.totumdy.com/database/portfolio.sqlite`. Local changes and uploads stay on each machine between runs.
 
 ## 🛠️ Tech Stack Details
 

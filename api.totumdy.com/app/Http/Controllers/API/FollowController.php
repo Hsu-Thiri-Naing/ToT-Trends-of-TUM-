@@ -4,10 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-
-
-use Illuminate\Http\Request;
-
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class FollowController extends Controller
 {
@@ -28,7 +25,10 @@ class FollowController extends Controller
 
         auth()->user()->follow($user);
 
-        return response()->json(['message' => 'Successfully followed user'], 200);
+        return response()->json([
+            'message' => 'Successfully followed user',
+            'is_mutual_follow' => $user->isFollowing(auth()->user()),
+        ]);
     }
 
     /**
@@ -48,7 +48,10 @@ class FollowController extends Controller
 
         auth()->user()->unfollow($user);
 
-        return response()->json(['message' => 'Successfully unfollowed user'], 200);
+        return response()->json([
+            'message' => 'Successfully unfollowed user',
+            'is_mutual_follow' => false,
+        ]);
     }
 
     /**
@@ -56,15 +59,7 @@ class FollowController extends Controller
      */
     public function followers(User $user)
     {
-        $followers = $user->followers()->paginate(20);
-        
-        // Add is_following status for each follower
-        $followers->getCollection()->transform(function ($follower) {
-            $follower->is_following = auth()->user()->isFollowing($follower);
-            return $follower;
-        });
-        
-        return response()->json($followers, 200);
+        return response()->json($this->addFollowStatus($user->followers()->paginate(20)));
     }
 
     /**
@@ -72,14 +67,21 @@ class FollowController extends Controller
      */
     public function following(User $user)
     {
-        $following = $user->following()->paginate(20);
-        
-        // Add is_following status for each followed user
-        $following->getCollection()->transform(function ($followedUser) {
-            $followedUser->is_following = auth()->user()->isFollowing($followedUser);
-            return $followedUser;
+        return response()->json($this->addFollowStatus($user->following()->paginate(20)));
+    }
+
+    private function addFollowStatus(LengthAwarePaginator $page): LengthAwarePaginator
+    {
+        $members = $page->getCollection();
+        $followingIds = auth()->user()->following()
+            ->whereIn('users.id', $members->modelKeys())
+            ->pluck('users.id')
+            ->flip();
+
+        $members->each(function (User $member) use ($followingIds) {
+            $member->is_following = $followingIds->has($member->id);
         });
-        
-        return response()->json($following, 200);
+
+        return $page;
     }
 }

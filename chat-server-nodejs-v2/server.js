@@ -261,4 +261,4 @@ process.on('SIGINT', () => {
 
 /* ---------- Start Server ---------- */
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`[Server] Running on port ${PORT}`));
+server.listen(PORT, process.env.CHAT_HOST || undefined, () => console.log(`[Server] Running on port ${PORT}`));

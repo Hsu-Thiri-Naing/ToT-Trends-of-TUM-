@@ -1,198 +1,160 @@
-// src/components/profile/ProfileView.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import UserGrid from "./UserGrid.jsx";
 import PostCardStatic from "../feed/PostCardStatic.jsx";
-import { formatMediaUrl } from "../../utils/mediaUrl";
+import UserAvatar from "../common/UserAvatar";
 import "./ProfileView.css";
+
+const TABS = [
+  { id: "following", label: "Following" },
+  { id: "followers", label: "Followers" },
+  { id: "posts", label: "Posts" },
+];
+const actionClass = "profile-action boxshadow2 boxshadow rounded-xl px-4 py-1 text-base sm:text-xl cursor-pointer disabled:cursor-wait";
 
 export default function ProfileView({
   profileUser,
   profileData,
-  onGoToEditProfile,
   currentUser,
-  loading,
-  onFollow,
-  onUnfollow,
+  profileError,
+  isFollowing,
+  isMutualFollow,
+  followChanges,
+  onChangeFollow,
+  onRetry,
+  onGoToEditProfile,
   onViewProfile,
-  onChat, // <-- Accept the onChat prop for initiating chats
-  onReportUser, // <-- Accept the new onReportUser prop
+  onChat,
+  onReportUser,
 }) {
   const [activeTab, setActiveTab] = useState("following");
 
-  if (loading) {
-    return <p className="loader"></p>;
-  }
+  if (!profileUser) return <p role="status">User not found.</p>;
 
-  if (!profileUser) {
-    return <p className="error">User not found</p>;
-  }
-
-  // Determine if the profile being viewed is the current user's own profile
   const isOwnProfile = profileUser.id === currentUser.id;
+  const followPending = Boolean(followChanges[profileUser.id]?.pending);
 
-  // Determine if the current user is following the profile user
-  // Use optional chaining and nullish coalescing for safety
-  const isFollowing = profileUser.is_following ?? false;
-  const isMutualFollow = profileData?.isMutualFollow ?? false;
-  // Handler for follow/unfollow button click
-  const handleFollowAction = () => {
-    if (isFollowing) {
-      onUnfollow(profileUser.id);
-    } else {
-      onFollow(profileUser.id);
-    }
-  };
+  function handleTabKey(event, index) {
+    const destinations = {
+      ArrowRight: (index + 1) % TABS.length,
+      ArrowLeft: (index - 1 + TABS.length) % TABS.length,
+      Home: 0,
+      End: TABS.length - 1,
+    };
+    const next = destinations[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    setActiveTab(TABS[next].id);
+    event.currentTarget.parentElement.querySelectorAll('[role="tab"]')[next].focus();
+  }
 
   return (
-    <div className="profile-container w-full lg:overflow-y-auto lg:no-scrollbar rounded-3xl lg:h-[calc(100vh-35px)] lg:mr-4 my-2 lg:my-4 bg-[#5978A433] font-balthazar p-4 sm:p-7">
-      {/* Profile Header Section */}
+    <div className="view-enter profile-container w-full lg:overflow-y-auto lg:no-scrollbar rounded-3xl lg:h-[calc(100vh-35px)] lg:mr-4 my-2 lg:my-4 bg-[#5978A433] font-balthazar p-4 sm:p-7">
       <div className="profile-header outline-1 outline-cyan-50/80 rounded-3xl px-4 sm:px-7 py-4 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-10 bg-white/10 shadow-lg">
-        {/* Profile Avatar/Image */}
-        <div className="profile-avatar ">
-          <img
+        <div className="profile-avatar shrink-0">
+          <UserAvatar
             className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl object-cover"
-            // Use the profileUser's avatar field (returned by backend), fallback to placeholder if not available
-            src={formatMediaUrl(
-              profileUser.avatar || profileUser.profile_picture,
-              "/assets/images/pf4.png",
-            )}
-            alt={`${profileUser.name || "User"}'s avatar`}
-            onError={(e) => {
-              e.currentTarget.src = "/assets/images/pf4.png";
-            }}
+            src={profileUser.avatar || profileUser.profile_picture}
+            alt={profileUser.name + "'s avatar"}
           />
         </div>
-
-        {/* Profile Information */}
-        <div className="profile-info  w-full flex flex-col justify-between gap-3">
-          {/* User's Name and Handle */}
+        <div className="profile-info w-full min-w-0 flex flex-col gap-3">
           <div>
-            <h1 className="roboto-serif-300 font-bold text-3xl sm:text-5xl text-center sm:text-left ">
-              {profileUser.name || "Unknown User"}
+            <h1 className="roboto-serif-300 font-bold text-3xl sm:text-5xl text-center sm:text-left break-words">
+              {profileUser.name}
             </h1>
-            <p className="text-sm text-center sm:text-left">
-              {profileUser.email || "No email"}
-            </p>
+            {profileUser.email && <p className="text-sm text-center sm:text-left break-words">{profileUser.email}</p>}
           </div>
-
-          {isOwnProfile && (
-            <div className="profile-actions flex flex-wrap justify-center sm:justify-start items-center gap-4 sm:gap-48">
-              {" "}
-              {/* Container for Edit profile buttons */}
-              <button
-                className="py-1 px-8 sm:px-12 rounded-xl text-base sm:text-xl boxshadow2 boxshadow cursor-pointer"
-                onClick={onGoToEditProfile}
-              >
+          <div className="profile-actions flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3">
+            {isOwnProfile ? (
+              <button type="button" className={actionClass} onClick={onGoToEditProfile}>
                 Edit Profile
               </button>
-            </div>
-          )}
-
-          {/* Action Buttons (Follow/Unfollow and Message) */}
-          {/* Only show action buttons if it's not the user's own profile */}
-          {!isOwnProfile && (
-            <div className="profile-actions flex flex-wrap justify-center sm:justify-start items-center gap-4 sm:gap-48">
-              {" "}
-              {/* Container for buttons */}
-              {/* Follow/Unfollow Button */}
-              <button
-                className="py-1 px-8 sm:px-12 rounded-xl text-base sm:text-xl boxshadow2 boxshadow cursor-pointer"
-                onClick={handleFollowAction}
-              >
-                {isFollowing ? "Unfollow" : "Follow"}
-              </button>
-              {/* Message Button */}
-              {/* Added onClick handler to initiate chat with this user */}
-              {isMutualFollow && onChat && (
+            ) : (
+              <>
                 <button
-                  className="message-button py-1 px-8 sm:px-12 rounded-xl text-base sm:text-xl boxshadow2 boxshadow cursor-pointer" // You can style this class in your CSS
-                  onClick={() => onChat(profileUser)} // Pass the entire profileUser object
+                  type="button"
+                  className={actionClass + " min-w-26"}
+                  onClick={() => onChangeFollow(profileUser, !isFollowing)}
+                  disabled={followPending}
+                  aria-busy={followPending}
                 >
-                  Message
+                  {isFollowing ? "Unfollow" : "Follow"}
                 </button>
-              )}
-              {/* Updated button handler to pass both user.id and user.name */}
-              <button
-                className=" report-btn py-1 px-8 sm:px-12 rounded-xl text-base sm:text-xl boxshadow2 boxshadow cursor-pointer"
-                onClick={() => onReportUser(profileUser.id, profileUser.name)} // Pass both ID and NAME
-              >
-                Report
-              </button>
-            </div>
-          )}
+                {isMutualFollow && (
+                  <button type="button" className={actionClass} onClick={() => onChat(profileUser)}>
+                    Message
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={actionClass}
+                  onClick={() => onReportUser(profileUser.id, profileUser.name)}
+                >
+                  Report
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Profile Tabs */}
-      <div className="profile-tabs flex justify-around items-center text-sm sm:text-[22px] border-b-2 border-b-cyan-50/70 -mx-4 sm:-mx-7 h-10">
-        <button
-          className="cursor-pointer hover:border-b-2 hover:border-b-teamcolor duration-50 ease-in-out focus:border-b-2 focus:border-b-teamcolor"
-          onClick={() => setActiveTab("following")}
-        >
-          <span className="text-base sm:text-2xl boxshadow2 px-2 py-1 rounded-xl ">
-            {profileData.following?.length ?? 0}
-          </span>{" "}
-          Following
-        </button>
-        <button
-          className="cursor-pointer hover:border-b-2 hover:border-b-teamcolor duration-50 ease-in-out focus:border-b-2 focus:border-b-teamcolor"
-          onClick={() => setActiveTab("followers")}
-        >
-          <span className="text-base sm:text-2xl boxshadow2 px-2 py-1 rounded-xl ">
-            {profileData.followers?.length ?? 0}
-          </span>{" "}
-          Followers
-        </button>
-        {/* 👇 ADD THIS — Posts Tab Button */}
-        <button
-          className="cursor-pointer hover:border-b-2 hover:border-b-teamcolor duration-50 ease-in-out focus:border-b-2 focus:border-b-teamcolor"
-          onClick={() => setActiveTab("posts")}
-        >
-          <span className="text-base sm:text-2xl boxshadow2 px-2 py-1 rounded-xl ">
-            {profileData.posts?.length ?? 0}
-          </span>{" "}
-          Posts
-        </button>
+      <div
+        className="profile-tabs grid grid-cols-3 text-sm sm:text-xl border-b border-cyan-50/70"
+        role="tablist"
+        aria-label="Profile sections"
+      >
+        {TABS.map(({ id, label }, index) => (
+          <button
+            key={id}
+            type="button"
+            id={"profile-tab-" + id}
+            role="tab"
+            aria-selected={activeTab === id}
+            aria-controls="profile-tab-panel"
+            tabIndex={activeTab === id ? 0 : -1}
+            className="profile-tab"
+            onClick={() => setActiveTab(id)}
+            onKeyDown={(event) => handleTabKey(event, index)}
+          >
+            <span className="profile-tab-count">{profileData?.[id].length ?? "…"}</span>
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Tab Content Area */}
-
-      <div className="profile-content py-5">
-        {/* Display list of users being followed */}
-
-        {activeTab === "following" && (
-          <UserGrid
-            users={profileData.following ?? []}
-            currentUser={currentUser}
-            onFollow={onFollow}
-            onUnfollow={onUnfollow}
-            onViewProfile={onViewProfile}
-            showFollowButton={true}
-          />
-        )}
-
-        {/* Display list of followers */}
-        {activeTab === "followers" && (
-          <UserGrid
-            users={profileData.followers ?? []}
-            currentUser={currentUser}
-            onFollow={onFollow}
-            onUnfollow={onUnfollow}
-            onViewProfile={onViewProfile}
-            showFollowButton={true}
-          />
-        )}
-
-        {activeTab === "posts" && (
-          <div className="posts-grid p-2 columns-1 sm:columns-2 gap-5">
-            {profileData.posts && profileData.posts.length > 0 ? (
-              profileData.posts.map((post) => (
-                <PostCardStatic key={post.id} post={post} />
-              ))
+      <div
+        className="profile-content py-5"
+        id="profile-tab-panel"
+        role="tabpanel"
+        aria-labelledby={"profile-tab-" + activeTab}
+        aria-busy={!profileData && !profileError}
+        tabIndex={0}
+      >
+        {!profileData ? (
+          <div className="profile-tab-status" role="status">
+            {profileError ? (
+              <>
+                <p>Couldn’t load profile details.</p>
+                <button type="button" className={actionClass} onClick={onRetry}>Retry</button>
+              </>
+            ) : "Loading profile details…"}
+          </div>
+        ) : (
+          <div key={activeTab} className="profile-tab-content">
+            {activeTab === "posts" ? (
+              <div className="posts-grid p-2 columns-1 sm:columns-2 gap-5">
+                {profileData.posts.length > 0
+                  ? profileData.posts.map((post) => <PostCardStatic key={post.id} post={post} />)
+                  : <p className="profile-tab-status">No posts yet.</p>}
+              </div>
             ) : (
-              <p className="no-posts error-message cherry-bomb text-xl text-red-500">
-                No posts yet.
-              </p>
+              <UserGrid
+                users={profileData[activeTab]}
+                currentUser={currentUser}
+                followChanges={followChanges}
+                onChangeFollow={onChangeFollow}
+                onViewProfile={onViewProfile}
+              />
             )}
           </div>
         )}

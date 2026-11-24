@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import apiClient from "../../api/apiClient";
 import { formatMediaUrl } from "../../utils/mediaUrl";
+import UserAvatar from "../common/UserAvatar";
 import "./CreatePostForm.css";
 
 export default function CreatePostForm({
@@ -20,7 +21,6 @@ export default function CreatePostForm({
   const [expanded, setExpanded] = useState(false);
 
   const fileInputRef = useRef(null);
-  const readerRef = useRef(null);
   const fileDialogOpenRef = useRef(false);
 
   useEffect(() => {
@@ -29,10 +29,14 @@ export default function CreatePostForm({
     };
     window.addEventListener("focus", handleWindowFocus);
     return () => {
-      if (readerRef.current) readerRef.current.abort();
       window.removeEventListener("focus", handleWindowFocus);
     };
   }, []);
+
+  useEffect(() => {
+    if (!preview) return;
+    return () => URL.revokeObjectURL(preview);
+  }, [preview]);
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -42,6 +46,8 @@ export default function CreatePostForm({
       return;
     }
     setSelectedFile(file);
+    setMediaUrl(null);
+    setMediaType(null);
     fileDialogOpenRef.current = false;
 
     // Create local preview immediately
@@ -114,8 +120,8 @@ export default function CreatePostForm({
       setCategoryId("");
       setExpanded(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
-    } catch (err) {
-      setError("Failed to create post.");
+    } catch {
+      setError("Failed to create post. Try again.");
     } finally {
       setPosting(false);
     }
@@ -133,31 +139,6 @@ export default function CreatePostForm({
   const handleButtonClick = () => {
     fileDialogOpenRef.current = true;
     fileInputRef.current?.click();
-  };
-
-  //for categoryselectedimg
-  const getSelectedImage = () => {
-    if (!categoryId) return "/assets/images/app.png";
-
-    const category = categories?.find(
-      (c) => String(c.id) === String(categoryId),
-    );
-    if (!category) return "/assets/images/app.png";
-
-    switch (category.name.toLowerCase()) {
-      case "entertainment":
-        return "/assets/images/tv.png";
-      case "news":
-        return "/assets/images/news.png";
-      case "announcement":
-        return "/assets/images/announce.png";
-      case "memes":
-        return "/assets/images/memes.png";
-      case "study":
-        return "/assets/images/study.png";
-      default:
-        return "/assets/images/app.png";
-    }
   };
 
   return (
@@ -181,16 +162,10 @@ export default function CreatePostForm({
         {/* Author Avatar & Text Input */}
         <div className="flex gap-2.5 sm:gap-3 items-start">
           <div className="rounded-full flex-shrink-0 pt-0.5">
-            <img
-              src={formatMediaUrl(
-                currentUser?.avatar || currentUser?.profile_picture,
-                "/assets/images/pf4.png",
-              )}
+            <UserAvatar
+              src={currentUser?.avatar || currentUser?.profile_picture}
               alt={`${currentUser?.name || "User"}'s avatar`}
               className="post-author-avatar rounded-2xl w-10 h-10 sm:w-12 sm:h-12 object-cover"
-              onError={(e) => {
-                e.currentTarget.src = "/assets/images/pf4.png";
-              }}
             />
           </div>
           <textarea
@@ -273,83 +248,28 @@ export default function CreatePostForm({
             <div className="flex items-center justify-between gap-2 pt-1">
               <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                 {/* Category Picker */}
-                <div className="category-picker flex gap-1.5 items-center">
+                <div className="category-picker flex gap-2 items-center">
+                  <label htmlFor="cat" className="text-sm text-blue-950">
+                    Category
+                  </label>
                   <select
-                    className="boxshadow cursor-pointer hover:scale-105 duration-200"
+                    className="category-select"
                     id="cat"
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
                     required
-                    style={{
-                      backgroundImage: `url(${getSelectedImage()})`,
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "center",
-                      backgroundSize: "20px",
-                    }}
                   >
-                    <option
-                      className="boxshadow"
-                      value=""
-                      style={{
-                        backgroundSize: "16px",
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "center",
-                        cursor: "pointer",
-                        backgroundImage: `url('/assets/images/app.png')`,
-                      }}
-                    ></option>
-                    {categories?.length > 0 &&
-                      categories.map((c) => {
-                        let label = "";
-                        let img = "";
-                        switch (c.name.toLowerCase()) {
-                          case "entertainment":
-                            label = "Entertainment";
-                            img = "/assets/images/tv.png";
-                            break;
-
-                          case "news":
-                            label = "News";
-                            img = "/assets/images/news.png";
-                            break;
-
-                          case "announcement":
-                            label = "Announcement";
-                            img = "/assets/images/announce.png";
-                            break;
-
-                          case "memes":
-                            label = "Memes";
-                            img = "/assets/images/memes.png";
-                            break;
-
-                          case "study":
-                            label = "Study";
-                            img = "/assets/images/study.png";
-                            break;
-
-                          default:
-                            label = "";
-                            break;
-                        }
-                        return (
-                          <option
-                            className="boxshadow"
-                            key={c.id}
-                            value={c.id}
-                            title={label}
-                            style={{
-                              backgroundSize: "16px",
-                              backgroundRepeat: "no-repeat",
-                              backgroundPosition: "center",
-                              cursor: "pointer",
-                              backgroundImage: `url(${img})`,
-                            }}
-                          ></option>
-                        );
-                      })}
+                    <option value="">Choose a category</option>
+                    {categories?.map((category) => (
+                      <option
+                        key={category.id}
+                        value={category.id}
+                        style={{ "--category-icon": 'url("' + category.icon + '")' }}
+                      >
+                        {category.name}
+                      </option>
+                    ))}
                   </select>
-                  <span className="text-xs sm:text-sm font-medium">Category</span>
                 </div>
 
                 {/* Media Attachment Button */}

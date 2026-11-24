@@ -126,7 +126,7 @@ class AuthController extends Controller
         // Add 'is_following' status to each user object in the collection
         $users->transform(function ($user) use ($currentUser) {
            
-            $user->is_following = $currentUser->isFollowing($user);
+            $user->is_following = $user->followers->contains($currentUser->id);
             
             return $user;
         });

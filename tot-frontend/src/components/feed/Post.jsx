@@ -9,6 +9,7 @@ import {
   sharePost,
 } from "../../api/postService";
 import { formatMediaUrl } from "../../utils/mediaUrl";
+import UserAvatar from "../common/UserAvatar";
 import "./Post.css";
 
 // --- ReactionButton Component ---
@@ -111,6 +112,7 @@ const Post = ({
   socket,
   onViewProfile,
   onViewOriginalPost,
+  onPostShared,
 }) => {
   // <-- Added onViewOriginalPost prop
   // --- State initialization ---
@@ -319,7 +321,7 @@ const Post = ({
 
       const response = await sharePost(originalPostIdToShare); // Share the original post
 
-      console.log("Share API response:", response.data);
+      onPostShared?.(response.data);
 
       // Update the share count for the *currently displayed* post in the UI.
       // This provides visual feedback for the action taken on the post visible to the user.
@@ -370,18 +372,12 @@ const Post = ({
         {/* Author Avatar and Name */}
         <div
           className="post-author cursor-pointer mr-2"
-          onClick={() => onViewProfile && onViewProfile(post.user_id)}
+          onClick={() => onViewProfile && onViewProfile(post.user_id, post.user)}
         >
-          <img
-            src={formatMediaUrl(
-              post.user?.avatar || post.user?.profile_picture,
-              "/assets/images/pf4.png",
-            )}
+          <UserAvatar
+            src={post.user?.avatar || post.user?.profile_picture}
             alt={`${post.user?.name || "User"}'s avatar`}
             className="post-author-avatar rounded-2xl w-12 h-12 object-cover"
-            onError={(e) => {
-              e.currentTarget.src = "/assets/images/pf4.png";
-            }}
           />
         </div>
 
@@ -399,7 +395,7 @@ const Post = ({
                 <strong
                   onClick={(e) => {
                     e.stopPropagation(); // Prevent triggering parent onClick
-                    onViewProfile && onViewProfile(post.shared_post?.user_id);
+                    onViewProfile?.(post.shared_post?.user_id, post.shared_post?.user);
                   }}
                   style={{ cursor: "pointer", color: "blue" }}
                 >
@@ -443,6 +439,8 @@ const Post = ({
           <div className="post-media ">
             {post.media_type === "image" && (
               <img
+                loading="lazy"
+                decoding="async"
                 src={formatMediaUrl(post.media_url)} /* max-h-60 */
                 alt="Post media"
                 className="w-full rounded-lg object-contain max-h-60"
@@ -488,7 +486,7 @@ const Post = ({
             <div className="shared-post-header mb-2">
               <div
                 onClick={() =>
-                  onViewProfile && onViewProfile(post.shared_post.user_id)
+                  onViewProfile && onViewProfile(post.shared_post.user_id, post.shared_post.user)
                 }
                 style={{
                   cursor: "pointer",
@@ -496,17 +494,12 @@ const Post = ({
                   alignItems: "center",
                 }}
               >
-                <img
-                  src={formatMediaUrl(
-                    post.shared_post.user?.avatar ||
-                      post.shared_post.user?.profile_picture,
-                    "/assets/images/pf4.png",
-                  )} // Avatar for shared post author
+                <UserAvatar
+                  src={
+                    post.shared_post.user?.avatar || post.shared_post.user?.profile_picture
+                  }
                   alt={`${post.shared_post.user?.name || "User"} avatar`}
                   className="shared-post-author-avatar w-8 h-8 rounded-xl mr-2 object-cover" // Different class for sizing if needed
-                  onError={(e) => {
-                    e.currentTarget.src = "/assets/images/pf4.png";
-                  }}
                 />
                 <strong className="chicle-regular">
                   {post.shared_post.user?.name}
@@ -528,6 +521,8 @@ const Post = ({
                 >
                   {post.shared_post.media_type === "image" && (
                     <img
+                      loading="lazy"
+                      decoding="async"
                       src={formatMediaUrl(post.shared_post.media_url)}
                       alt="Shared post media"
                       style={{
@@ -628,6 +623,7 @@ const Post = ({
             <button
               onClick={toggleComments}
               disabled={actionLoading}
+              aria-label={isCommentsVisible ? "Hide comments" : "Show comments"}
               aria-expanded={isCommentsVisible}
               style={{
                 width: "30px",
@@ -665,52 +661,32 @@ const Post = ({
         </div>
 
         {isCommentsVisible && (
-          <div className="post-comments-section boxshadow3 mb-8 rounded-xl px-3 sm:px-6 py-4 z-50 bg-white/80 backdrop-blur-md">
-            {isLoadingComments && <p>Loading comments...</p>}
+          <div className="post-comments-section mb-8">
+            {isLoadingComments && (
+              <p className="comment-status" role="status">Loading comments...</p>
+            )}
             {comments.length > 0 ? (
               <ul className="comments-list">
                 {comments.map((comment) => (
-                  <li key={comment.id} className="comment-item">
-                    {/* Comment Author Avatar */}
-                    <div className="comment-author flex gap-2 mb-3">
-                      <img
-                        src={formatMediaUrl(
-                          comment.user?.avatar ||
-                            comment.user?.profile_picture,
-                          "/assets/images/pf4.png",
-                        )} // Avatar for comment author
-                        alt={`${comment.user?.name || "User"} avatar`}
-                        className="comment-author-avatar w-8 h-8 rounded-xl object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = "/assets/images/pf4.png";
-                        }}
-                      />
-                      <strong className="chicle-regular">
-                        {comment.user?.name}:
-                      </strong>
-                      <span>{comment.body}</span>
+                  <li key={comment.id} className="comment-item flex items-start gap-2.5">
+                    <UserAvatar
+                      src={comment.user?.avatar || comment.user?.profile_picture}
+                      alt=""
+                      className="comment-author-avatar w-8 h-8 shrink-0 rounded-xl object-cover"
+                    />
+                    <div className="comment-copy">
+                      <strong className="chicle-regular">{comment.user?.name}</strong>
+                      <p>{comment.body}</p>
                     </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              !isLoadingComments && (
-                <p className="mb-3 text-amber-600">
-                  <i>No comments yet.</i>
-                </p>
-              )
+              !isLoadingComments && <p className="comment-status">No comments yet.</p>
             )}
-            <form
-              onSubmit={handleAddComment}
-              className="add-comment-form flex justify-between items-end "
-            >
+            <form onSubmit={handleAddComment} className="add-comment-form">
               <input
-                className="
-                            inset-shadow-[0_5px_3px_3px_rgba(0,0,0,0.25)]
-                            rounded-xl
-                            text-lg
-                            px-4
-                            py-2 outline-0 focus:placeholder-gray-400/50 w-full mr-3"
+                className="comment-input"
                 type="text"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
@@ -719,10 +695,11 @@ const Post = ({
                 disabled={actionLoading}
               />
               <button
-                className="send-btn w-7 h-7 bg-[url('/assets/images/send.png')] bg-cover bg-center cursor-pointer hover:bg-[url('/assets/images/sends.png')] hover:scale-100 duration-300 "
+                className="comment-send"
                 type="submit"
+                aria-label="Send comment"
                 disabled={actionLoading || !newComment.trim()}
-              ></button>
+              />
             </form>
           </div>
         )}

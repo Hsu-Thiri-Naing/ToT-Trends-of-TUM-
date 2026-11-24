@@ -107,3 +107,15 @@ body {
         transform: translate(-50%, -50%);
     }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+    .view-enter,
+    .profile-tab-content {
+        animation: view-enter 140ms ease-out;
+    }
+}
+
+@keyframes view-enter {
+    from { opacity: 0.78; }
+    to { opacity: 1; }
+}

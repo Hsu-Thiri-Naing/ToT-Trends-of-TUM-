@@ -1,185 +1,105 @@
 // src/components/chat/Chat.jsx
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import axios from "axios";
-import { formatMediaUrl } from "../../utils/mediaUrl";
+import React, { useState, useEffect, useRef } from "react";
+import apiClient from "../../api/apiClient";
+import UserAvatar from "../common/UserAvatar";
 import "./Chat.css";
 
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
-  const host = typeof window !== "undefined" && window.location.hostname ? window.location.hostname : "127.0.0.1";
-  if (host === "totumdy.com" || host.endsWith(".totumdy.com")) {
-    const proto = window.location.protocol || "https:";
-    return `${proto}//api.totumdy.com/api`;
-  }
-  return `http://${host}:8000/api`;
-};
-
-const LARAVEL_API_BASE_URL = getApiBaseUrl();
-
 const Chat = ({
-  sanctumToken,
   currentUserId,
   otherUserId,
   otherUserName,
   otherUserAvatar,
   onViewProfile,
-  onlineUsers,
   isOtherUserOnline,
   socket,
   onBackToUserList,
 }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [historyError, setHistoryError] = useState(null);
+  const [sendError, setSendError] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [connected, setConnected] = useState(Boolean(socket?.connected));
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  useEffect(() => {
+    if (!loadingHistory) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loadingHistory]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Fetch message history
-  useEffect(() => {
-    const fetchMessageHistory = async () => {
-      setMessages([]);
-      setNewMessage("");
-      setLoadingHistory(true);
-
-      if (!sanctumToken || !currentUserId || !otherUserId) {
-        console.error("Chat: Cannot fetch history, missing required props.", {
-          sanctumToken,
-          currentUserId,
-          otherUserId,
+    const controller = new AbortController();
+    apiClient.get("/messages/" + otherUserId, { signal: controller.signal })
+      .then(({ data }) => {
+        if (controller.signal.aborted) return;
+        setMessages((current) => {
+          const historyIds = new Set(data.map((message) => message.id));
+          return [...data, ...current.filter((message) => !historyIds.has(message.id))];
         });
-        setLoadingHistory(false);
-        return;
-      }
-
-      try {
-        console.log(
-          `Chat: Fetching message history with user ID ${otherUserId}`,
-        );
-        const response = await axios.get(
-          `${LARAVEL_API_BASE_URL}/messages/${otherUserId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${sanctumToken}`,
-            },
-          },
-        );
-
-        const historyMessages = response.data || [];
-        console.log("Chat: Fetched message history:", historyMessages);
-        setMessages(historyMessages);
-        scrollToBottom();
-      } catch (error) {
-        console.error("Chat: Error fetching message history:", error);
-        setMessages([]);
-      } finally {
-        setLoadingHistory(false);
-      }
-    };
-
-    fetchMessageHistory();
-  }, [sanctumToken, currentUserId, otherUserId]);
-
-  // Join chat room and set up listeners using the passed socket
-  useEffect(() => {
-    if (!socket || !currentUserId || !otherUserId) {
-      console.warn(
-        "Chat: Missing socket or user IDs, cannot setup chat listeners.",
-      );
-      return;
-    }
-
-    console.log(
-      `Chat: Setting up listeners and joining chat room with user ID ${otherUserId} using main socket.`,
-    );
-
-    // Join the specific chat room for this conversation
-    socket.emit("joinChat", { otherUserId });
-
-    // Listener for receiving messages
-    const handleReceiveMessage = (message) => {
-      console.log(
-        "Chat: Received message (real-time or confirmation):",
-        message,
-      );
-      setMessages((prevMessages) => {
-        const existingIndex = prevMessages.findIndex(
-          (m) => m.id && message.id && m.id === message.id,
-        );
-
-        if (existingIndex !== -1) return prevMessages;
-
-        // Replace the sender's optimistic bubble with the persisted message.
-        const optimisticIndex = prevMessages.findIndex(
-          (m) =>
-            m.tempId &&
-            !m.id &&
-            m.sender_id === message.sender_id &&
-            m.recipient_id === message.recipient_id &&
-            m.content === message.content,
-        );
-
-        if (optimisticIndex !== -1) {
-          const updatedMessages = [...prevMessages];
-          updatedMessages[optimisticIndex] = message;
-          return updatedMessages;
-        }
-
-        return [...prevMessages, message];
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setHistoryError("Could not load earlier messages.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingHistory(false);
       });
-      scrollToBottom();
+    return () => controller.abort();
+  }, [otherUserId]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const appendMessage = (message) => {
+      const incoming = message.sender_id === otherUserId && message.recipient_id === currentUserId;
+      const outgoing = message.sender_id === currentUserId && message.recipient_id === otherUserId;
+      if (!incoming && !outgoing) return;
+      setMessages((current) =>
+        current.some((item) => item.id === message.id) ? current : [...current, message]
+      );
+    };
+    const handleSent = (message) => {
+      if (message.sender_id !== currentUserId || message.recipient_id !== otherUserId) return;
+      appendMessage(message);
+      setNewMessage("");
+      setSending(false);
+      setSendError(null);
+    };
+    const handleError = ({ error }) => {
+      setSending(false);
+      setSendError(error || "Could not send the message. Try again.");
+    };
+    const handleConnect = () => setConnected(true);
+    const handleDisconnect = () => {
+      setConnected(false);
+      setSending(false);
     };
 
-    // Listener for message errors
-    const handleMessageError = (data) => {
-      console.error("Chat: Error from server:", data.error);
-      alert(`Chat Error: ${data.error}`);
-    };
-
-    // Attach listeners
-    socket.on("receiveMessage", handleReceiveMessage);
-    socket.on("messageSent", handleReceiveMessage);
-    socket.on("messageError", handleMessageError);
-
-    // Cleanup: Remove listeners when component unmounts or dependencies change
+    setConnected(socket.connected);
+    socket.on("receiveMessage", appendMessage);
+    socket.on("messageSent", handleSent);
+    socket.on("messageError", handleError);
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
     return () => {
-      socket.off("receiveMessage", handleReceiveMessage);
-      socket.off("messageSent", handleReceiveMessage);
-      socket.off("messageError", handleMessageError);
+      socket.off("receiveMessage", appendMessage);
+      socket.off("messageSent", handleSent);
+      socket.off("messageError", handleError);
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
     };
   }, [socket, currentUserId, otherUserId]);
 
-  const handleSendMessage = useCallback(() => {
-    if (newMessage.trim() && socket) {
-      const messageContent = newMessage.trim();
-      const messageData = {
-        sender_id: currentUserId,
-        recipient_id: otherUserId,
-        content: messageContent,
-      };
-
-      const tempMessage = {
-        ...messageData,
-        id: undefined,
-        tempId: `temp-${Date.now()}`,
-        created_at: new Date().toISOString(),
-      };
-
-      setMessages((prevMessages) => [...prevMessages, tempMessage]);
-      scrollToBottom();
-      setNewMessage("");
-
-      socket.emit("sendMessage", messageData);
-    }
-  }, [newMessage, socket, currentUserId, otherUserId]);
+  const handleSendMessage = () => {
+    const content = newMessage.trim();
+    if (!content || !socket?.connected || sending) return;
+    setSending(true);
+    setSendError(null);
+    socket.emit("sendMessage", {
+      sender_id: currentUserId,
+      recipient_id: otherUserId,
+      content,
+    });
+  };
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -190,14 +110,9 @@ const Chat = ({
 
   // Use the provided name or fallback
   const displayName = otherUserName || `User ${otherUserId || "Unknown"}`;
-  const rawAvatar =
-    otherUserAvatar ||
-    (typeof otherUserId === "object" ? otherUserId.avatar : null) ||
-    "/assets/images/pf4.png";
-  const avatarSrc = formatMediaUrl(rawAvatar, "/assets/images/pf4.png");
 
   return (
-    <section className="container w-full mx-auto order-2 lg:flex-8 rounded-3xl h-[calc(100dvh-135px)] lg:h-[calc(100vh-35px)] lg:mr-4 my-0 lg:my-4 bg-[#5978A433] font-balthazar py-2 lg:py-4 px-1 sm:px-2 lg:px-4 min-w-0 flex flex-col">
+    <section className="view-enter container w-full mx-auto order-2 lg:flex-8 rounded-3xl h-[calc(100dvh-135px)] lg:h-[calc(100vh-35px)] lg:mr-4 my-0 lg:my-4 bg-[#5978A433] font-balthazar py-2 lg:py-4 px-1 sm:px-2 lg:px-4 min-w-0 flex flex-col">
       <div className="chat-container boxshadow rounded-3xl sm:rounded-4xl px-3 sm:px-7 pt-4 pb-3 mx-auto flex flex-col gap-2 w-full h-full">
         {/* Chat Header */}
         <div className="chat-header flex items-center gap-3 border-b-2 border-b-cyan-50/70 pb-3 flex-none">
@@ -214,13 +129,10 @@ const Chat = ({
           )}
 
           <div className="profile-avatar relative flex-shrink-0">
-            <img
+            <UserAvatar
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover"
-              src={avatarSrc}
+              src={otherUserAvatar || otherUserId?.avatar}
               alt={`${displayName}'s avatar`}
-              onError={(e) => {
-                e.currentTarget.src = "/assets/images/pf4.png";
-              }}
             />
             {/* Display Online Status */}
             <span
@@ -267,7 +179,7 @@ const Chat = ({
                 (msg.sender && msg.sender.id == currentUserId);
               return (
                 <div
-                  key={msg.id || msg.tempId}
+                  key={msg.id}
                   className={`message-bubble boxshadow ${
                     isCurrentUser ? "message-outgoing" : "message-incoming"
                   }`}
@@ -292,6 +204,12 @@ const Chat = ({
           <div ref={messagesEndRef} />
         </div>
 
+        {(sendError || historyError || !connected) && (
+          <p role="status" className="text-sm text-blue-950">
+            {sendError || historyError || "Connecting to chat..."}
+          </p>
+        )}
+
         {/* Input Area */}
         <div className="chat-input-area boxshadow py-2 px-3 rounded-2xl flex items-center justify-between gap-2 flex-none mt-auto">
           <input
@@ -301,13 +219,14 @@ const Chat = ({
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyPress}
             placeholder={`Message ${displayName}...`}
-            disabled={!socket || loadingHistory}
+            readOnly={sending}
+            maxLength={5000}
           />
 
           <button
             className="send-btn w-6 h-6 bg-[url('/assets/images/send.png')] bg-cover bg-center cursor-pointer hover:bg-[url('/assets/images/sends.png')] hover:scale-105 duration-300 flex-shrink-0 disabled:opacity-40"
             onClick={handleSendMessage}
-            disabled={!newMessage.trim() || !socket || loadingHistory}
+            disabled={!newMessage.trim() || !connected || sending}
             aria-label="Send"
           ></button>
         </div>

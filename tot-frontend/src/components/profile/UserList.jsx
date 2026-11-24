@@ -1,16 +1,13 @@
 // src/components/profile/UserList.jsx
 import React from "react";
-import { formatMediaUrl } from "../../utils/mediaUrl";
+import UserAvatar from "../common/UserAvatar";
 import "./UserList.css"; // Create this CSS file for styling
 
 export default function UserList({
   users,
   currentUser,
-  onFollow,
-  onUnfollow,
   onViewProfile,
   onChat,
-  onReportUser,
   // --- RECEIVE THE NEW PROP ---
   onlineUsers,
   // --- END RECEIVE ---
@@ -25,7 +22,7 @@ export default function UserList({
 
   if (validUsers.length === 0) {
     return (
-      <section className="user-list font-balthazar order-1 lg:order-3 lg:flex-1 flex flex-row items-center justify-center gap-2 outline-cyan-50 outline-1 rounded-2xl w-full lg:mr-4 my-2 p-2 bg-gray-400/10 lg:block lg:justify-start lg:rounded-3xl lg:my-4 lg:p-3 lg:overflow-hidden sticky top-0 z-20 lg:static no-scrollbar">
+      <section className="user-list font-balthazar order-1 lg:order-3 lg:flex-1 lg:min-w-52 flex flex-row items-center justify-center gap-2 outline-cyan-50 outline-1 rounded-2xl w-full lg:mr-4 my-2 p-2 bg-gray-400/10 lg:block lg:justify-start lg:rounded-3xl lg:my-4 lg:p-3 lg:overflow-hidden sticky top-0 z-20 lg:static no-scrollbar">
         <div className="flex items-center gap-2 my-1 p-1 lg:flex-col lg:gap-0 lg:my-2 lg:p-3">
           <img className="w-5 lg:w-7" src="/assets/images/friends.png" alt="" />
           <p className="text-lg text-blue-900 lg:text-2xl">Trendmates</p>
@@ -36,7 +33,7 @@ export default function UserList({
   }
 
   return (
-    <section className="order-1 lg:order-3 lg:flex-1 lg:mr-4 min-w-0 w-full top-0 z-20 lg:static">
+    <section className="order-1 lg:order-3 lg:flex-1 lg:mr-4 min-w-0 lg:min-w-52 w-full top-0 z-20 lg:static">
       <div className="user-list font-balthazar bg-gray-400/30 backdrop-blur-md no-scrollbar outline-cyan-50 outline-1 rounded-2xl w-full p-2.5 lg:bg-gray-400/10 lg:rounded-3xl lg:my-4 lg:p-3 lg:overflow-y-auto lg:h-[calc(100vh-35px)] flex flex-col">
         {/* Mobile Header Label */}
         <div className="flex items-center justify-between px-1 pb-1.5 lg:hidden flex-shrink-0">
@@ -69,21 +66,15 @@ export default function UserList({
                   {/* Mobile View: Story-style Bubble (avoids any horizontal text clipping/overlap) */}
                   <div className="flex flex-col items-center w-full lg:hidden group">
                     <button
-                      onClick={() => onViewProfile && onViewProfile(user.id)}
+                      onClick={() => onViewProfile && onViewProfile(user.id, user)}
                       className="relative cursor-pointer flex flex-col items-center w-full focus:outline-none bg-transparent border-0 p-0"
                       aria-label={`View profile of ${user.name}`}
                     >
                       <div className="relative w-12 h-12 rounded-2xl p-0.5 ring-2 ring-white/60 shadow-xs bg-white/20 transition-transform group-hover:scale-105 active:scale-95 flex items-center justify-center flex-shrink-0">
-                        <img
-                          src={formatMediaUrl(
-                            user.avatar || user.profile_picture,
-                            "/assets/images/pf4.png",
-                          )}
+                        <UserAvatar
+                          src={user.avatar || user.profile_picture}
                           alt={user.name}
                           className="w-full h-full rounded-[14px] object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = "/assets/images/pf4.png";
-                          }}
                         />
                         {/* Status indicator dot */}
                         <span
@@ -103,20 +94,14 @@ export default function UserList({
                   <div className="hidden lg:flex items-center justify-between gap-2 w-full p-1.5 rounded-xl hover:bg-white/15 transition-colors">
                     <button
                       className="profile-link flex items-center gap-2 text-sm flex-1 min-w-0 text-left cursor-pointer bg-transparent border-0 p-0"
-                      onClick={() => onViewProfile && onViewProfile(user.id)}
+                      onClick={() => onViewProfile && onViewProfile(user.id, user)}
                       aria-label={`View profile of ${user.name}`}
                     >
                       <div className="user-avatar-container relative flex-shrink-0">
-                        <img
-                          src={formatMediaUrl(
-                            user.avatar || user.profile_picture,
-                            "/assets/images/pf4.png",
-                          )}
+                        <UserAvatar
+                          src={user.avatar || user.profile_picture}
                           alt={`${user.name}'s avatar`}
                           className="user-avatar w-10 h-10 min-w-10 min-h-10 max-w-10 max-h-10 bg-gray-300 rounded-xl object-cover shadow-xs"
-                          onError={(e) => {
-                            e.currentTarget.src = "/assets/images/pf4.png";
-                          }}
                         />
                         {/* Apply the dynamically determined online status */}
                         <div className="online-status absolute -bottom-0.5 -right-0.5">

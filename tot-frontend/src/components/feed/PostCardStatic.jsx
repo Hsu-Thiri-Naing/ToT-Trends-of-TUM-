@@ -2,6 +2,7 @@ import React from "react";
 //import "./Post.css"; // 👈 Reuse existing Post styling
 import "./PostCardStatic.css"; // 👈 New CSS for PostCardStatic
 import { formatMediaUrl } from "../../utils/mediaUrl";
+import UserAvatar from "../common/UserAvatar";
 
 const CATEGORY_NAMES = {
   news: "News",
@@ -18,8 +19,6 @@ const PostCardStatic = ({ post }) => {
   const comments = post.comments_count || 0;
   const shares = post.shares_count || 0;
 
-  // Get first letter of username for avatar
-  const userInitial = post.user?.name?.charAt(0).toUpperCase() || "?";
   const isShared = !!post.shared_post_id;
 
   // ✅ NEW: Media rendering function (updated to handle both current and shared post media)
@@ -128,16 +127,10 @@ const PostCardStatic = ({ post }) => {
       <header className="post-header flex justify-between items-start">
         <div className="mb-4 flex items-center">
           <div className="post-avatar rounded-lg w-fit inline-block  mr-2 cursor-pointer">
-            <img
-              src={formatMediaUrl(
-                post.user?.avatar || post.user?.profile_picture,
-                "/assets/images/pf4.png",
-              )}
+            <UserAvatar
+              src={post.user?.avatar || post.user?.profile_picture}
               alt={`${post.user?.name || "User"}'s avatar`}
               className="user-avatar w-10 h-10 rounded-lg object-cover"
-              onError={(e) => {
-                e.currentTarget.src = "/assets/images/pf4.png";
-              }}
             />
           </div>
           <div className="post-header-info flex flex-col  ">
@@ -186,17 +179,12 @@ const PostCardStatic = ({ post }) => {
           <div className="shared-post-container py-2 px-5 border-y-2 border-y-blue-500/10">
             <div className="shared-post-header mb-2">
               <div className="flex items-center">
-                <img
+                <UserAvatar
                   className=" w-8 h-8 rounded-lg mr-3 object-cover"
-                  src={formatMediaUrl(
-                    post.shared_post.user?.avatar ||
-                      post.shared_post.user?.profile_picture,
-                    "/assets/images/pf4.png",
-                  )}
+                  src={
+                    post.shared_post.user?.avatar || post.shared_post.user?.profile_picture
+                  }
                   alt={`${post.shared_post.user?.name || "User"} avatar`}
-                  onError={(e) => {
-                    e.currentTarget.src = "/assets/images/pf4.png";
-                  }}
                 />
                 <strong style={{ fontSize: "16px" }}>
                   {post.shared_post.user?.name}

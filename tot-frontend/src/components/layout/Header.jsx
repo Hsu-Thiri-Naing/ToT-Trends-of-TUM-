@@ -1,63 +1,23 @@
 // src/components/layout/Header.jsx (Updated)
-import React from "react";
+import { useRef, useState } from "react";
 import "./header.css";
-import { useState } from "react";
-import newsIcon from "/assets/images/newsc.png";
-import memesIcon from "/assets/images/memescc.png";
-import entertainmentIcon from "/assets/images/tvc.png";
-import studyIcon from "/assets/images/studyc.png";
-import announcementsIcon from "/assets/images/announcec.png";
-
-const categoryIconMap = {
-  News: newsIcon,
-  Memes: memesIcon,
-  Entertainment: entertainmentIcon,
-  Study: studyIcon,
-  Announcement: announcementsIcon,
-};
-
-// Define the mapping between views and their header buttons
-const viewButtonMap = {
-  feed: [
-    { text: "My Profile", handlerName: "onGoToMyProfile" },
-    { text: "Messages", handlerName: "onGoToChat" },
-  ],
-  profile: [
-    { text: "Edit Profile", handlerName: "onGoToEditProfile" },
-    { text: "Back to Feed", handlerName: "onGoToFeed" },
-  ],
-  editProfile: [{ text: "Back to Feed", handlerName: "onGoToFeed" }],
-  chat: [{ text: "Back to Feed", handlerName: "onGoToFeed" }],
-};
 
 export default function Header({
   user,
   currentView,
+  currentProfileId,
   onGoToFeed,
   onGoToMyProfile,
-  onGoToEditProfile,
   onGoToChat,
   onLogout,
   categories,
   selectedCats,
   toggleCat,
-  showPills,
-  setShowPills,
 }) {
   const [active, setActive] = useState(false);
+  const categoryTrigger = useRef(null);
   // If no user is logged in, don't render the header content
   if (!user) return null;
-
-  // Get the button configuration for the current view
-  const buttons = viewButtonMap[currentView] || viewButtonMap.feed;
-
-  // Create a mapping object for handler functions to make dynamic access easier
-  const handlerMap = {
-    onGoToFeed,
-    onGoToMyProfile,
-    onGoToEditProfile,
-    onGoToChat,
-  };
 
   return (
     <header className="w-full lg:w-auto">
@@ -100,6 +60,8 @@ export default function Header({
           <button
             className="homeBtn icon bg-[url('/assets/images/home.png')] hover:bg-[url('/assets/images/solidHome.png')]"
             onClick={onGoToFeed}
+            aria-label="Home"
+            aria-current={currentView === "feed" ? "page" : undefined}
           ></button>
           <p className="invisible group-hover:visible text-xs ">Home</p>
         </div>
@@ -108,109 +70,66 @@ export default function Header({
           <button
             className=" contactBtn icon bg-[url('/assets/images/contact.png')] hover:bg-[url('/assets/images/medias.png')]"
             onClick={onGoToChat}
+            aria-label="Chat"
+            aria-current={currentView === "chat" ? "page" : undefined}
           ></button>
           <p className="invisible group-hover:visible text-xs">Chat</p>
         </div>
 
-        {/* Category filter button - only show on feed view */}
-        {currentView === "feed" && categories && categories.length > 0 && (
-          <>
-            <div
-              className="group flex flex-col items-center gap-1"
-              onClick={() => setActive(!active)}
+        {currentView === "feed" && categories?.length > 0 && (
+          <div
+            className="category-control group flex flex-col items-center gap-1"
+            onKeyDown={(event) => {
+              if (event.key !== "Escape" || !active) return;
+              event.preventDefault();
+              setActive(false);
+              categoryTrigger.current?.focus();
+            }}
+          >
+            <button
+              ref={categoryTrigger}
+              type="button"
+              className="category-glass category-trigger"
+              onClick={() => setActive((open) => !open)}
+              aria-label="Toggle feed categories"
+              aria-controls="feed-category-menu"
+              aria-expanded={active}
             >
-              <button
-                className="categoryBtn icon bg-[url('/assets/images/app.png')] hover:bg-[url('/assets/images/apps.png')]"
-                onMouseEnter={() => setShowPills(true)}
-                onClick={() => setShowPills((v) => !v)}
-              ></button>
-              <p className="invisible group-hover:visible text-xs">Category</p>
-            </div>
-
-            <div className={`menu ${active ? "active" : ""}`}>
-              <li
-                style={{ "--i": 0, "--clr": "#0a66c2" }}
-                title="Announcements"
-                className="boxshadow"
-                onClick={() => toggleCat("announcement")}
-              >
-                <input
-                  className="opacity-0 w-0 h-0 absolute"
-                  type="checkbox"
-                  checked={selectedCats.includes("announcement")}
-                  onChange={() => toggleCat("announcement")}
-                  readOnly
-                />
-                <img src="assets/images/announce.png" alt="Announcements" />
-              </li>
-              <li
-                style={{ "--i": 1, "--clr": "#0a66c2" }}
-                title="Study"
-                className="boxshadow"
-                onClick={() => toggleCat("study")}
-              >
-                <input
-                  className="opacity-0 w-0 h-0 absolute"
-                  type="checkbox"
-                  checked={selectedCats.includes("study")}
-                  onChange={() => toggleCat("study")}
-                  readOnly
-                />
-                <img src="assets/images/study.png" alt="Study" />
-              </li>
-              <li
-                style={{ "--i": 2, "--clr": "#0a66c2" }}
-                title="Entertainment"
-                className="boxshadow"
-                onClick={() => toggleCat("entertainment")}
-              >
-                <input
-                  className="opacity-0 w-0 h-0 absolute"
-                  type="checkbox"
-                  checked={selectedCats.includes("entertainment")}
-                  onChange={() => toggleCat("entertainment")}
-                  readOnly
-                />
-                <img src="assets/images/tv.png" alt="Entertainment" />
-              </li>
-              <li
-                style={{ "--i": 3, "--clr": "#0a66c2" }}
-                title="Memes"
-                className="boxshadow"
-                onClick={() => toggleCat("memes")}
-              >
-                <input
-                  className="opacity-0 w-0 h-0 absolute"
-                  type="checkbox"
-                  checked={selectedCats.includes("memes")}
-                  onChange={() => toggleCat("memes")}
-                  readOnly
-                />
-                <img src="assets/images/memes.png" alt="Memes" />
-              </li>
-              <li
-                style={{ "--i": 4, "--clr": "#0a66c2" }}
-                title="News"
-                className="boxshadow"
-                onClick={() => toggleCat("news")}
-              >
-                <input
-                  className="opacity-0 w-0 h-0 absolute"
-                  type="checkbox"
-                  checked={selectedCats.includes("news")}
-                  onChange={() => toggleCat("news")}
-                  readOnly
-                />
-                <img src="assets/images/news.png" alt="News" />
-              </li>
-            </div>
-          </>
+              <img src="/assets/images/app.png" alt="" />
+            </button>
+            <p className="invisible group-hover:visible text-xs">Category</p>
+            <ul
+              id="feed-category-menu"
+              className="category-orbit"
+              aria-label="Feed categories"
+              aria-hidden={!active}
+              data-open={active}
+              inert={!active}
+            >
+              {categories.slice().reverse().map((category, index) => (
+                <li className="category-orbit-item" key={category.id} style={{ "--category-index": index }}>
+                  <button
+                    type="button"
+                    className="category-glass category-orbit-button"
+                    aria-label={category.name}
+                    aria-pressed={selectedCats.includes(category.id)}
+                    title={category.name}
+                    onClick={() => toggleCat(category.id)}
+                  >
+                    <img src={category.icon} alt="" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         <div className="group flex flex-col items-center gap-1">
           <button
             className=" profileBtn icon bg-[url('/assets/images/user.png')] hover:bg-[url('/assets/images/users.png')]"
             onClick={onGoToMyProfile}
+            aria-label="My profile"
+            aria-current={currentProfileId === user.id && (currentView === "profile" || currentView === "editProfile") ? "page" : undefined}
           ></button>
           <p className="invisible group-hover:visible text-xs">Profile</p>
         </div>
@@ -220,6 +139,7 @@ export default function Header({
           <button
             className=" logoutBtn icon bg-[url('/assets/images/out.png')] hover:bg-[url('/assets/images/logouts.png')]"
             onClick={onLogout}
+            aria-label="Log out"
           ></button>
           <p className="invisible group-hover:visible text-xs">Logout</p>
         </div>

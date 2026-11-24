@@ -1,6 +1,6 @@
 // src/components/EditProfile.jsx
 import React, { useState } from "react";
-import { formatMediaUrl } from "../../utils/mediaUrl";
+import UserAvatar from "../common/UserAvatar";
 import "./EditProfile.css"; // Optional: Import CSS for styling
 
 const EditProfile = ({ user, onUpdateProfile, onGoToMyProfile }) => {
@@ -72,7 +72,7 @@ const EditProfile = ({ user, onUpdateProfile, onGoToMyProfile }) => {
     };
 
     return (
-        <section className="editContainer rounded-3xl lg:h-[540px] lg:mr-8 my-4 lg:my-auto bg-[#5978A433] font-balthazar lg:overflow-hidden py-5 w-full">
+        <section className="view-enter editContainer rounded-3xl lg:h-[540px] lg:mr-8 my-4 lg:my-auto bg-[#5978A433] font-balthazar lg:overflow-hidden py-5 w-full">
             <div className="edit-profile-container boxshadow  rounded-4xl px-4 sm:px-7 pt-2 mx-auto flex flex-col w-full lg:w-120 lg:h-full lg:overflow-y-auto lg:no-scrollbar">
                 <div className="chat-header -mx-7 py-3 border-b-2 border-b-cyan-50/70 ">
                     <h2 className="text-3xl text-center">Edit Profile</h2>
@@ -105,18 +105,13 @@ const EditProfile = ({ user, onUpdateProfile, onGoToMyProfile }) => {
                         <label htmlFor="profilePicture" className="text-xl">
                             Profile Picture:
                         </label>
-                        {previewUrl && (
-                            <div className="image-preview ">
-                                <img
-                                    src={formatMediaUrl(previewUrl, "/assets/images/pf4.png")}
-                                    alt="Profile Preview"
-                                    className="w-25 h-25 object-cover rounded-full"
-                                    onError={(e) => {
-                                        e.currentTarget.src = "/assets/images/pf4.png";
-                                    }}
-                                />
-                            </div>
-                        )}
+                        <div className="image-preview ">
+                            <UserAvatar
+                                src={previewUrl}
+                                alt="Profile Preview"
+                                className="w-25 h-25 object-cover rounded-full"
+                            />
+                        </div>
                         <input
                             className="boxshadow2 outline-0 rounded-2xl text-lg px-4 py-2 cursor-pointer "
                             type="file"

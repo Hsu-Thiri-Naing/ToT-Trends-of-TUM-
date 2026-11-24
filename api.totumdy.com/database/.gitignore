@@ -1,1 +1,2 @@
 *.sqlite*
+!portfolio-demo.sqlite

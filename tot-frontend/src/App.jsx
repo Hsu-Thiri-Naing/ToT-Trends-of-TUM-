@@ -1,9 +1,8 @@
 // src/App.jsx (Updated with online status state and listeners)
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import io from "socket.io-client"; // <-- Import Socket.IO Client
 import apiClient from "./api/apiClient";
 import Header from "./components/layout/Header.jsx";
-import Footer from "./components/layout/Footer.jsx";
 import Login from "./components/auth/Login.jsx";
 import Register from "./components/auth/Register.jsx";
 import Feed from "./components/feed/Feed.jsx";
@@ -18,12 +17,23 @@ import { logout, updateProfile } from "./api/authService"; // Import updateProfi
 // --- END IMPORT ---
 import { deletePost } from "./api/postService";
 import CATEGORIES from "./config/categories.js";
+import useProfileDetails from "./hooks/useProfileDetails";
+import { readScrollPosition, restoreScrollPosition } from "./utils/scrollPosition";
 import "./App.css";
+
+const FEED_CACHE_MS = 30_000;
+
+function updateMembership(members, member, include) {
+    const exists = members.some((item) => item.id === member.id);
+    if (exists === include) return members;
+    return include ? [member, ...members] : members.filter((item) => item.id !== member.id);
+}
 
 export default function App() {
     const [user, setUser] = useState(null);
     const [posts, setPosts] = useState([]);
-    const [categories, setCategories] = useState([]);
+    const categories = CATEGORIES;
+    const [token, setToken] = useState(() => localStorage.getItem("token"));
     const [usersList, setUsersList] = useState([]); // This holds the full user list from API
     // --- NEW STATE: For online users ---
     const [onlineUsers, setOnlineUsers] = useState(new Set());
@@ -36,11 +46,11 @@ export default function App() {
     const [profileUser, setProfileUser] = useState(null);
     const [chatWithUser, setChatWithUser] = useState(null);
 
-    const [profileData, setProfileData] = useState({
-        followers: [],
-        following: [],
-    });
-    const [profileLoading, setProfileLoading] = useState(false);
+    const [followChanges, setFollowChanges] = useState({});
+    const followRequests = useRef(new Map());
+    const navigation = useRef(0);
+    const feedScroll = useRef(null);
+    const feedLoadedAt = useRef(0);
 
     // --- NEW STATE: For new views ---
     const [extraView, setExtraView] = useState(null); // Can be 'passwordResetRequest', 'reportUser', etc.
@@ -54,8 +64,50 @@ export default function App() {
 
     // --- NEW STATE: For category filtering ---
     const [selectedCats, setSelectedCats] = useState([]);
-    const [showPills, setShowPills] = useState(false);
     // --- END NEW STATE ---
+
+    const userId = user?.id;
+    const profileId = profileUser?.id;
+    const { profile, profileError, retryProfile, clearProfiles } = useProfileDetails(
+        userId,
+        profileId,
+        currentView === "profile" && !extraView,
+    );
+
+    const profileChange = followChanges[profileId];
+    const displayedProfileUser = profileId === userId
+        ? user
+        : usersList.find((item) => item.id === profileId) ?? profileUser;
+    const isFollowingProfile = profileChange?.following ?? displayedProfileUser?.is_following ?? false;
+    const canMessageProfile = isFollowingProfile && (profileChange?.mutual ?? profile?.isMutualFollow ?? false);
+    const profileData = profile && {
+        ...profile,
+        followers: profileChange && user
+            ? updateMembership(profile.followers, user, profileChange.following)
+            : profile.followers,
+        following: profileId === userId
+            ? Object.values(followChanges).reduce(
+                (members, change) => updateMembership(members, change.user, change.following),
+                profile.following,
+            )
+            : profile.following,
+    };
+
+    function goToView(nextView) {
+        navigation.current += 1;
+        if (currentView === "feed" && nextView !== "feed") {
+            feedScroll.current = readScrollPosition(document.querySelector(".feed"));
+        }
+        setCurrentView(nextView);
+    }
+
+    useLayoutEffect(() => {
+        const feed = currentView === "feed" && !extraView;
+        restoreScrollPosition(
+            feed ? feedScroll.current : null,
+            feed ? document.querySelector(".feed") : null,
+        );
+    }, [currentView, profileId, extraView, userId]);
 
     const toggleCat = (id) =>
         setSelectedCats((prev) =>
@@ -71,22 +123,13 @@ export default function App() {
         // Accept optional user ID
         setReportingUserId(userId); // Store the user ID to report
         setReportingUserName(userName);
+        navigation.current += 1;
         setExtraView("reportUser");
-    };
-
-    const handleBackFromPasswordResetRequest = () => {
-        setExtraView(null); // Go back to the previous main view (e.g., login screen)
-    };
-
-    const handleBackFromReportUser = () => {
-        setExtraView(null); // Go back to the previous main view (e.g., feed)
-        setReportingUserId(null); // Clear the reported user ID
-        setReportingUserName(null);
     };
 
     const handleBackToFeedFromReportUser = () => {
         setExtraView(null); // Go back to the feed view
-        setCurrentView("feed"); // Explicitly set main view to feed
+        goToView("feed");
         setReportingUserId(null); // Clear the reported user ID
         setReportingUserName(null);
     };
@@ -99,8 +142,8 @@ export default function App() {
         setError(null);
         setAuthView("login");
         setExtraView(null); // Clear any extra views on successful login
-        // Socket connection is established by the first useEffect when `user` state changes
-        window.location.reload();
+        setLoading(true);
+        setToken(token);
     };
 
     const handleLogout = async () => {
@@ -115,6 +158,7 @@ export default function App() {
             }
             // --- End Socket.IO disconnect ---
             localStorage.removeItem("token");
+            setToken(null);
             setUser(null);
             setPosts([]);
             setUsersList([]);
@@ -125,11 +169,16 @@ export default function App() {
             setExtraView(null); // Clear extra views
             setChatWithUser(null);
             setProfileUser(null);
-            setProfileData({ followers: [], following: [] });
-            setProfileLoading(false);
+            clearProfiles();
+            for (const controller of followRequests.current.values()) controller.abort();
+            followRequests.current.clear();
+            setFollowChanges({});
+            navigation.current += 1;
+            feedLoadedAt.current = 0;
+            feedScroll.current = null;
+            setError(null);
             // Reset category filters on logout
             setSelectedCats([]);
-            setShowPills(false);
         }
     };
 
@@ -137,9 +186,10 @@ export default function App() {
         try {
             const response = await apiClient.post("/posts", postData);
             setPosts((prev) => [response.data, ...prev]);
+            clearProfiles();
         } catch (err) {
             console.error("Create post error:", err);
-            setError("Failed to create post");
+            throw err;
         }
     };
 
@@ -153,134 +203,93 @@ export default function App() {
             setPosts((prevPosts) =>
                 prevPosts.filter((post) => post.id !== postId)
             );
+            clearProfiles();
         } catch (err) {
             console.error("Error deleting post:", err);
             setError("Failed to delete post.");
         }
     };
 
-    const initiateChat = (userToChatWith) => {
-        setChatWithUser(userToChatWith);
-        setCurrentView("chat");
+    const handleSharedPost = (sharedPost) => {
+        setPosts((previous) => [
+            sharedPost,
+            ...previous.map((post) => post.id === sharedPost.shared_post?.id
+                ? { ...post, shares_count: (post.shares_count ?? 0) + 1 }
+                : post),
+        ]);
+        clearProfiles();
     };
 
-    const viewProfile = async (userId) => {
-        setProfileLoading(true);
-        setCurrentView("profile");
+    const initiateChat = async (userToChatWith) => {
+        const request = ++navigation.current;
+        try {
+            const { data } = await apiClient.get(
+                "/users/" + userId + "/is-mutual-follow/" + userToChatWith.id
+            );
+            if (request !== navigation.current) return;
+            if (!data.is_mutual_follow) {
+                setError("You can chat once you follow each other.");
+                return;
+            }
+            setError(null);
+            setChatWithUser(userToChatWith);
+            goToView("chat");
+        } catch {
+            if (request === navigation.current) {
+                setError("Could not check whether chat is available. Try again.");
+            }
+        }
+    };
+
+    const viewProfile = (id, knownUser) => {
+        if (!id) return;
+        const identity = id === userId ? user : usersList.find((item) => item.id === id) ?? knownUser;
+        setProfileUser(identity ?? { id, name: "User" });
+        setError(null);
+        goToView("profile");
+    };
+
+    const changeFollow = async (target, following) => {
+        if (followRequests.current.has(target.id)) return;
+
+        const controller = new AbortController();
+        followRequests.current.set(target.id, controller);
+        const previous = followChanges[target.id];
+        setError(null);
+        setFollowChanges((changes) => ({
+            ...changes,
+            [target.id]: { user: target, following, pending: true, mutual: false },
+        }));
 
         try {
-            let profileUserData = null;
-
-            if (userId === user?.id) {
-                profileUserData = user;
-            } else {
-                // Fetch user list to find the profile user (or use a dedicated endpoint if available)
-                const usersRes = await apiClient.get("/users");
-                profileUserData = Array.isArray(usersRes.data)
-                    ? usersRes.data.find((u) => u.id === userId)
-                    : null;
-            }
-
-            setProfileUser(profileUserData || { id: userId, name: "User" });
-
-            // --- FETCH FOLLOWERS, FOLLOWING, POSTS ---
-            const [followersRes, followingRes, postsRes] = await Promise.all([
-                apiClient.get(`/followers/${userId}`),
-                apiClient.get(`/following/${userId}`),
-                apiClient.get(`/users/${userId}/posts`),
-            ]);
-
-            const followersData =
-                followersRes.data.data ||
-                (Array.isArray(followersRes.data) ? followersRes.data : []);
-            const followingData =
-                followingRes.data.data ||
-                (Array.isArray(followingRes.data) ? followingRes.data : []);
-            const userPosts = Array.isArray(postsRes.data) ? postsRes.data : [];
-
-            // --- FETCH MUTUAL FOLLOW STATUS SEPARATELY ---
-            let isMutualFollow = false; // Default value
-            if (userId !== user?.id) {
-                // Only check if not viewing own profile
-                try {
-                    // Call the mutual follow endpoint
-                    const mutualFollowResponse = await apiClient.get(
-                        `/users/${userId}/is-mutual-follow/${user.id}`
-                    );
-                    // Extract the status, defaulting to false if not present
-                    isMutualFollow =
-                        mutualFollowResponse.data?.is_mutual_follow ?? false;
-                } catch (followCheckError) {
-                    // Handle potential errors (e.g., network issues, 403 from backend if user tries self-check)
-                    console.error(
-                        "Error checking mutual follow status:",
-                        followCheckError
-                    );
-                    // isMutualFollow remains false
-                }
-            }
-            // If viewing own profile, isMutualFollow should logically be false or irrelevant, default is fine.
-
-            // --- UPDATE STATE ---
-            setProfileData({
-                followers: followersData,
-                following: followingData,
-                posts: userPosts,
-                // ADD the mutual follow status to profileData
-                isMutualFollow: isMutualFollow,
+            const { data } = await apiClient.post("/" + (following ? "follow/" : "unfollow/") + target.id, null, {
+                signal: controller.signal,
             });
-        } catch (err) {
-            setError("Failed to load profile");
-            console.error("Profile error:", err);
-            setProfileUser({ id: userId, name: "User" | "User" });
-            // Ensure profileData has isMutualFollow even on error
-            setProfileData((prevData) => ({
-                ...prevData,
-                isMutualFollow: false,
+            if (controller.signal.aborted) return;
+            setFollowChanges((changes) => ({
+                ...changes,
+                [target.id]: { user: target, following, pending: false, mutual: data.is_mutual_follow },
             }));
+        } catch {
+            if (controller.signal.aborted) return;
+            setFollowChanges((changes) => {
+                const restored = { ...changes };
+                if (previous) restored[target.id] = previous;
+                else delete restored[target.id];
+                return restored;
+            });
+            setError(following ? "Failed to follow user. Try again." : "Failed to unfollow user. Try again.");
         } finally {
-            setProfileLoading(false);
-        }
-    };
-
-    const handleFollow = async (userId) => {
-        try {
-            await apiClient.post(`/follow/${userId}`);
-            setUsersList((prev) =>
-                prev.map((u) =>
-                    u.id === userId ? { ...u, is_following: true } : u
-                )
-            );
-
-            if (currentView === "profile" && profileUser?.id === userId) {
-                viewProfile(userId);
+            if (followRequests.current.get(target.id) === controller) {
+                followRequests.current.delete(target.id);
             }
-        } catch (err) {
-            setError("Failed to follow user");
-        }
-    };
-
-    const handleUnfollow = async (userId) => {
-        try {
-            await apiClient.post(`/unfollow/${userId}`);
-            setUsersList((prev) =>
-                prev.map((u) =>
-                    u.id === userId ? { ...u, is_following: false } : u
-                )
-            );
-
-            if (currentView === "profile" && profileUser?.id === userId) {
-                viewProfile(userId);
-            }
-        } catch (err) {
-            setError("Failed to unfollow user");
         }
     };
 
     // --- NEW HANDLER: Navigate to Edit Profile view ---
     const handleGoToEditProfile = () => {
         if (user) {
-            setCurrentView("editProfile");
+            goToView("editProfile");
         }
     };
 
@@ -314,10 +323,7 @@ export default function App() {
             const updatedUserData = response.data.user || response.data; // Fallback
             setUser(updatedUserData);
 
-            // Optionally, update profileUser if currently on the profile view of the same user
-            if (profileUser && profileUser.id === user.id) {
-                setProfileUser(updatedUserData);
-            }
+            clearProfiles();
 
             console.log("Profile updated successfully via API!");
             // Optionally, you could show a success message to the user here
@@ -363,13 +369,6 @@ export default function App() {
 
     // --- Modified useEffect Hook: Auth check, data fetch, and Socket.IO setup ---
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        // Don't return early based on token presence here anymore
-        // if (!token) {
-        //   setLoading(false);
-        //   return;
-        // }
-
         let isMounted = true; // Flag to prevent state updates if component unmounts
         let newSocketInstance = null; // Keep track of the socket instance locally for cleanup
 
@@ -413,8 +412,8 @@ export default function App() {
 
                 // --- Define named listener functions for explicit cleanup ---
                 const handleConnect = () => {
-                    console.log(
-                        "[Socket] Connected to Socket.IO server for real-time updates"
+                    setError((previous) =>
+                        previous === "Real-time updates unavailable." ? null : previous
                     );
                 };
 
@@ -540,21 +539,10 @@ export default function App() {
                     "[App.jsx] Socket.IO connection established and listeners attached."
                 );
 
-                // 3. Fetch initial data (posts, users)
-                const [postsRes, usersRes] = await Promise.all([
-                    apiClient.get("/posts"),
-                    apiClient.get("/users"),
-                ]);
-
-                if (!isMounted) return;
-
-                setPosts(postsRes.data);
-                setUsersList(Array.isArray(usersRes.data) ? usersRes.data : []);
             } catch (error) {
                 console.error("App initialization error:", error);
                 if (!isMounted) return;
-                localStorage.removeItem("token");
-                setError("Session expired. Please login again.");
+                setError("Could not connect to the API. Refresh to try again.");
             } finally {
                 if (isMounted) {
                     setLoading(false); // Set loading to false after everything is done or failed
@@ -572,59 +560,33 @@ export default function App() {
             isMounted = false; // Set flag on unmount
             console.log("[App.jsx useEffect Cleanup] Running...");
 
-            if (newSocketInstance) {
-                // --- Explicitly remove listeners using the named functions ---
-                // These variables (handleConnect, handleReactionUpdated, etc.) are captured here
-                // because they were defined in the same scope (the initializeApp function inside useEffect)
-                newSocketInstance.off("connect", handleConnect);
-                // --- NEW LISTENERS: Remove the online status listeners ---
-                newSocketInstance.off("onlineList", handleOnlineList);
-                newSocketInstance.off("userOnline", handleUserOnline);
-                newSocketInstance.off("userOffline", handleUserOffline);
-                // --- END NEW LISTENERS ---
-                newSocketInstance.off("reactionUpdated", handleReactionUpdated);
-                newSocketInstance.off("commentAdded", handleCommentAdded);
-                newSocketInstance.off("userJoined", handleUserJoined);
-                newSocketInstance.off("connect_error", handleConnectError);
-                newSocketInstance.off("disconnect", handleDisconnect);
-
-                newSocketInstance.disconnect();
-                console.log(
-                    "[App.jsx useEffect Cleanup] Socket.IO listeners removed and disconnected."
-                );
-
-                // Ensure state is also cleared if this was the active socket
-                if (socket === newSocketInstance) {
-                    setSocket(null);
-                }
-            }
+            newSocketInstance?.removeAllListeners();
+            newSocketInstance?.disconnect();
         };
-    }, []); // Run only once on mount
+    }, [token]);
 
-    // --- useEffect Hook: Fetch data when authenticated/view changes ---
     useEffect(() => {
-        if (!user) return;
-
-        const fetchData = async () => {
+        if (!userId || currentView !== "feed" || Date.now() - feedLoadedAt.current < FEED_CACHE_MS) return;
+        const controller = new AbortController();
+        async function fetchFeed() {
             try {
                 const [postsRes, usersRes] = await Promise.all([
-                    apiClient.get("/posts"),
-                    apiClient.get("/users"),
+                    apiClient.get("/posts", { signal: controller.signal }),
+                    apiClient.get("/users", { signal: controller.signal }),
                 ]);
-
+                if (controller.signal.aborted) return;
+                feedLoadedAt.current = Date.now();
                 setPosts(postsRes.data);
                 setUsersList(Array.isArray(usersRes.data) ? usersRes.data : []);
-                setCategories(CATEGORIES);
             } catch (err) {
+                if (controller.signal.aborted) return;
                 setError("Failed to load data. Please refresh.");
                 console.error("Data fetch error:", err);
             }
-        };
-
-        if (currentView === "feed") {
-            fetchData();
         }
-    }, [user, currentView]); // Depend on user and currentView
+        fetchFeed();
+        return () => controller.abort();
+    }, [userId, currentView]);
 
     // --- RENDERING LOGIC ---
     if (loading) {
@@ -635,17 +597,15 @@ export default function App() {
                 <Header
                     user={user}
                     currentView={currentView}
-                    onGoToFeed={() => setCurrentView("feed")}
+                    currentProfileId={profileId}
+                    onGoToFeed={() => goToView("feed")}
                     onGoToMyProfile={() => user && viewProfile(user.id)} // Ensure user exists
-                    onGoToEditProfile={handleGoToEditProfile} // Pass the new handler
-                    onGoToChat={() => setCurrentView("chat")}
+                    onGoToChat={() => goToView("chat")}
                     onLogout={handleLogout}
                     // Pass category state and functions
                     categories={categories}
                     selectedCats={selectedCats}
                     toggleCat={toggleCat}
-                    showPills={showPills}
-                    setShowPills={setShowPills}
                 />
                 <main className="centered-main">
                     <article aria-busy="true"></article>
@@ -667,17 +627,15 @@ export default function App() {
                 <Header
                     user={user}
                     currentView={currentView}
-                    onGoToFeed={() => setCurrentView("feed")}
+                    currentProfileId={profileId}
+                    onGoToFeed={() => goToView("feed")}
                     onGoToMyProfile={() => user && viewProfile(user.id)} // Ensure user exists
-                    onGoToEditProfile={handleGoToEditProfile} // Pass the new handler
-                    onGoToChat={() => setCurrentView("chat")}
+                    onGoToChat={() => goToView("chat")}
                     onLogout={handleLogout}
                     // Pass category state and functions
                     categories={categories}
                     selectedCats={selectedCats}
                     toggleCat={toggleCat}
-                    showPills={showPills}
-                    setShowPills={setShowPills}
                 />
 
                 {/* --- NEW RENDERING LOGIC: Check for extraView first --- */}
@@ -709,6 +667,7 @@ export default function App() {
                                 categories={categories}
                                 onCreatePost={handleCreatePost} // This was likely the missing function
                                 onDeletePost={handleDeletePost}
+                                onPostShared={handleSharedPost}
                                 socket={socket}
                                 onViewProfile={viewProfile}
                                 onReportUser={handleSwitchToReportUser} // Pass the handler to Feed component if needed for post reports
@@ -720,8 +679,6 @@ export default function App() {
                             <UserList
                                 users={usersList}
                                 currentUser={user}
-                                onFollow={handleFollow}
-                                onUnfollow={handleUnfollow}
                                 onViewProfile={viewProfile}
                                 onChat={initiateChat}
                                 onReportUser={handleSwitchToReportUser} // Pass the handler to UserList component
@@ -732,13 +689,17 @@ export default function App() {
                         </>
                     ) : currentView === "profile" ? (
                         <ProfileView
-                            profileUser={profileUser}
+                            key={profileId}
+                            profileUser={displayedProfileUser}
                             profileData={profileData}
                             onGoToEditProfile={handleGoToEditProfile}
                             currentUser={user}
-                            loading={profileLoading}
-                            onFollow={handleFollow}
-                            onUnfollow={handleUnfollow}
+                            profileError={profileError}
+                            onRetry={retryProfile}
+                            isFollowing={isFollowingProfile}
+                            isMutualFollow={canMessageProfile}
+                            followChanges={followChanges}
+                            onChangeFollow={changeFollow}
                             onViewProfile={viewProfile}
                             onChat={initiateChat}
                             onReportUser={handleSwitchToReportUser} // Pass the handler to ProfileView component
@@ -747,31 +708,28 @@ export default function App() {
                         <EditProfile
                             user={user}
                             onUpdateProfile={handleUpdateProfile}
-                            onGoToMyProfile={() => setCurrentView("profile")} // Navigate back to profile view
+                            onGoToMyProfile={() => viewProfile(user.id)}
                         />
                     ) : currentView === "chat" ? (
                         chatWithUser && chatWithUser.id ? (
                             <>
                                 <Chat
-                                    sanctumToken={localStorage.getItem("token")}
+                                    key={chatWithUser.id}
                                     currentUserId={user.id}
                                     otherUserId={chatWithUser?.id}
                                     otherUserName={chatWithUser?.name}
-                                    otherUserAvatar={chatWithUser?.avatar}
+                                    otherUserAvatar={chatWithUser.avatar || chatWithUser.profile_picture}
                                     onViewProfile={viewProfile}
-                                    onlineUsers={onlineUsers}
                                     isOtherUserOnline={onlineUsers?.has(
                                         chatWithUser.id
                                     )}
                                     socket={socket}
                                     onBackToUserList={() => setChatWithUser(null)}
                                 />
-                                <div className="hidden lg:block lg:flex-1 lg:h-[calc(100vh-35px)] min-w-0">
+                                <div className="hidden lg:block lg:flex-1 lg:h-[calc(100vh-35px)] lg:min-w-52">
                                     <UserList
                                         users={usersList}
                                         currentUser={user}
-                                        onFollow={handleFollow}
-                                        onUnfollow={handleUnfollow}
                                         onViewProfile={viewProfile}
                                         onChat={initiateChat}
                                         onReportUser={handleSwitchToReportUser}
@@ -781,14 +739,14 @@ export default function App() {
                             </>
                         ) : (
                             <>
-                                <section className="order-2 lg:flex-8 lg:h-[calc(100vh-35px)] min-w-0 my-2 lg:my-4 flex flex-col items-center justify-center w-full">
+                                <section className="view-enter order-2 lg:flex-8 lg:h-[calc(100vh-35px)] min-w-0 my-2 lg:my-4 flex flex-col items-center justify-center w-full">
                                     <div className="w-full min-h-[calc(100vh-120px)] sm:min-h-0 sm:w-fit mx-auto my-auto rounded-2xl text-teamcolor bg-[#5978A433]/30 bg-blur-2xl cherry-bomb text-xl overflow-hidden p-10 flex flex-col items-center justify-center">
                                         <h3>You have no recent chats.</h3>
                                         <p className="mb-3">
                                             Connect with trendmates to have some fun!
                                         </p>
                                         <button
-                                            onClick={() => setCurrentView("feed")}
+                                            onClick={() => goToView("feed")}
                                             className="py-2 px-6 boxshadow2 rounded-xl cursor-pointer"
                                         >
                                             Back
@@ -798,8 +756,6 @@ export default function App() {
                                 <UserList
                                     users={usersList}
                                     currentUser={user}
-                                    onFollow={handleFollow}
-                                    onUnfollow={handleUnfollow}
                                     onViewProfile={viewProfile}
                                     onChat={initiateChat}
                                     onReportUser={handleSwitchToReportUser}
@@ -827,7 +783,6 @@ export default function App() {
                 )}
             </main>
 
-            {/* <Footer /> */}
         </div>
     );
 }

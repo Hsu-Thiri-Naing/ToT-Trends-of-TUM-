@@ -19,10 +19,12 @@ class FollowTest extends TestCase
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
 
+        $user2->follow($user1);
+
         $response = $this->actingAs($user1, 'sanctum')
             ->postJson("/api/follow/{$user2->id}");
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)->assertJsonPath('is_mutual_follow', true);
         $this->assertDatabaseHas('follows', [
             'follower_id' => $user1->id,
             'followee_id' => $user2->id,
@@ -46,7 +48,7 @@ class FollowTest extends TestCase
         $response = $this->actingAs($user1, 'sanctum')
             ->postJson("/api/unfollow/{$user2->id}");
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)->assertJsonPath('is_mutual_follow', false);
         $this->assertDatabaseMissing('follows', [
             'follower_id' => $user1->id,
             'followee_id' => $user2->id,
