@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { LuPaperclip, LuSend } from "react-icons/lu";
 import apiClient from "../../api/apiClient";
 import { formatMediaUrl } from "../../utils/mediaUrl";
 import UserAvatar from "../common/UserAvatar";
@@ -169,7 +170,7 @@ export default function CreatePostForm({
             />
           </div>
           <textarea
-            className="post-textarea text-base w-full resize-none bg-transparent outline-none placeholder:text-slate-600 min-h-[38px] pt-1 leading-snug"
+            className="post-textarea text-base w-full resize-none bg-transparent placeholder:text-slate-600 min-h-[38px] pt-1 leading-snug"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onFocus={() => setExpanded(true)}
@@ -182,7 +183,7 @@ export default function CreatePostForm({
 
         {/* Expanded Controls & Media Preview */}
         {expanded && (
-          <div className="flex flex-col gap-2.5 w-full pt-1 border-t border-cyan-50/40">
+          <div className="composer-controls flex flex-col gap-2.5 w-full">
             {/* Media Preview Container */}
             {(preview || mediaUrl) && (
               <div className="media-preview-container relative w-full rounded-2xl overflow-hidden bg-black/5 p-1.5 sm:p-2 border border-white/40 flex flex-col items-center">
@@ -244,49 +245,40 @@ export default function CreatePostForm({
               </p>
             )}
 
-            {/* Actions Bar */}
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                {/* Category Picker */}
-                <div className="category-picker flex gap-2 items-center">
-                  <label htmlFor="cat" className="text-sm text-blue-950">
-                    Category
-                  </label>
-                  <select
-                    className="category-select"
-                    id="cat"
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    required
-                  >
-                    <option value="">Choose a category</option>
-                    {categories?.map((category) => (
-                      <option
-                        key={category.id}
-                        value={category.id}
-                        style={{ "--category-icon": 'url("' + category.icon + '")' }}
-                      >
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <div className="composer-actions">
+              <div className="category-picker">
+                <label htmlFor="cat">Category</label>
+                <select
+                  className="category-select"
+                  id="cat"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  required
+                >
+                  <option value="">Pick a category</option>
+                  {categories?.map((category) => (
+                    <option
+                      key={category.id}
+                      value={category.id}
+                      style={{ "--category-icon": 'url("' + category.icon + '")' }}
+                    >
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {/* Media Attachment Button */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleButtonClick}
-                    className="choose-file-btn w-7 h-7 cursor-pointer hover:scale-110 duration-200 bg-[url('/assets/images/gallery.png')] bg-cover bg-center bg-no-repeat flex-shrink-0"
-                    disabled={uploading || posting}
-                    title="Attach Photo or Video"
-                    aria-label="Choose media file to upload"
-                  />
-                  <span className="text-xs sm:text-sm font-medium hidden xs:inline">
-                    Media
-                  </span>
-                </div>
-
+              <div className="composer-buttons">
+                <button
+                  type="button"
+                  onClick={handleButtonClick}
+                  className="composer-button glass-lens"
+                  disabled={uploading || posting}
+                  title="Attach media"
+                  aria-label="Choose media file to upload"
+                >
+                  <LuPaperclip aria-hidden="true" />
+                </button>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -296,19 +288,15 @@ export default function CreatePostForm({
                   className="hidden"
                   aria-hidden="true"
                 />
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   type="submit"
                   disabled={uploading || posting}
-                  className={`post-btn w-6 h-6 sm:w-7 sm:h-7 bg-[url('/assets/images/send.png')] bg-cover bg-center cursor-pointer hover:bg-[url('/assets/images/sends.png')] hover:scale-110 duration-200 disabled:opacity-40 flex-shrink-0 ${
-                    posting ? "animate-pulse" : ""
-                  }`}
+                  className="composer-button glass-primary"
                   title="Publish post"
                   aria-label="Publish post"
-                />
+                >
+                  <LuSend aria-hidden="true" />
+                </button>
               </div>
             </div>
 

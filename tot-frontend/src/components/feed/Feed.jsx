@@ -77,8 +77,11 @@ const Feed = ({
     <section className="view-enter order-2 lg:flex-8 lg:max-h-screen min-w-0">
       <div ref={feedPanel} className="feed lg:overflow-y-auto no-scrollbar lg:h-[calc(100vh-35px)] liquid-glass rounded-3xl mx-2 my-1 lg:mx-0 lg:my-4">
         <div className="feed-intro">
-          <header>
-            <h1>Hi, {user?.name}</h1>
+          <header className="feed-welcome glass-lens glass-responsive">
+            <h1 className="feed-greeting">
+              <span className="feed-greeting-line">Welcome back{user?.name ? "," : ""}</span>
+              {user?.name && <>{" "}<span className="feed-greeting-name">{user.name}</span></>}
+            </h1>
           </header>
           <CreatePostForm
             onCreatePost={onCreatePost}
